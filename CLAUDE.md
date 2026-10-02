@@ -79,6 +79,8 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 /shops.json                 รายชื่อร้าน: scriptId, deploymentId, rootFolderId, workerEnv (ไม่ใช่ความลับ)
 /scripts/
   gas.mjs                   เขียน gas/.clasp.json จาก shops.json แล้วรัน clasp
+/tests/
+  gas-harness.cjs           mock บริการ Apps Script แล้วรัน _selfTest() บน Node: `npm run test:gas`
 /gas/
   .clasp.json               สร้างอัตโนมัติโดย scripts/gas.mjs (gitignore) ห้ามแก้เอง
   appsscript.json
@@ -86,6 +88,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
   Setup.gs                  setup(), onOpen() เมนูใน Sheet
   Auth.gs                   login, session, hash, ผู้ใช้และสิทธิ์ (admin/staff)
   Audit.gs                  เขียนแท็บ AuditLog
+  SelfTest.gs               _selfTest() ทดสอบ backend บน Sheet จริง (เมนู Catalog → ทดสอบระบบ) แล้วลบข้อมูลทดสอบทิ้ง
   Products.gs               CRUD, ค้นหา, import CSV
   Drive.gs                  โฟลเดอร์, อัปโหลด, ตั้งค่าแชร์, list รูป
   Settings.gs               ตั้งค่าร้าน, หมวดหมู่
@@ -124,6 +127,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 | folderUrl | string | |
 | status | `active` \| `hidden` | ค่าเริ่มต้น `active` |
 | oldCodes | string | รหัสเก่าคั่นด้วย `,` ใช้ redirect |
+| coverFileId | string | id รูปแรกในโฟลเดอร์ (รูปปก) อัปเดตเมื่ออัปโหลด/ลบรูป/เชื่อมโฟลเดอร์ ใช้แสดงรูปย่อในรายการ admin โดยไม่ต้องเปิดทุกโฟลเดอร์ |
 | createdAt | ISO datetime | |
 | updatedAt | ISO datetime | |
 | updatedBy | string | username ล่าสุดที่แก้ |
@@ -140,7 +144,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 
 | key | ค่า |
 |---|---|
-| `USERS` | JSON array `[{ username, displayName, role: "admin"\|"staff", salt, hash, createdAt, lastLoginAt }]` — `hash` = SHA-256 hex ของ `salt + password`, `username` ตรง `^[a-z0-9_.-]{3,30}$`, รหัสผ่านอย่างน้อย 8 ตัว |
+| `USERS` | JSON array `[{ username, displayName, role: "admin"\|"staff", salt, hash, passwordChangedAt, createdAt, lastLoginAt }]` — session ที่ออกก่อน `passwordChangedAt` ใช้ไม่ได้ (ตั้งรหัสใหม่แล้วหลุดทุกเครื่อง), `hash` = SHA-256 hex ของ `salt + password`, `username` ตรง `^[a-z0-9_.-]{3,30}$`, รหัสผ่านอย่างน้อย 8 ตัว |
 | `API_SECRET` | random 32+ ตัวอักษร ใช้ค่าเดียวกับ Worker |
 | `ROOT_FOLDER_ID` | โฟลเดอร์หลักใน Drive ของร้าน (ร้านละโฟลเดอร์ ระบุไว้แล้วใน `shops.json` → `rootFolderId`) `setup()` ถามลิงก์โฟลเดอร์ผ่าน prompt ถ้ายังไม่ได้ตั้ง (เว้นว่าง = สร้างใหม่) และตรวจว่าเปิดได้ |
 
@@ -161,7 +165,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - `linkFolder(token, productId, folderUrl)`
 - `getCategories(token)` → `[{ name, count }]`, `addCategory(token, name)`, `renameCategory(token, oldName, newName)` (อัปเดตสินค้าในหมวด + sync), `deleteCategory(token, name)` (เฉพาะ count = 0)
 - `getSettings(token)`, `saveSettings(token, settings)`, `uploadLogo(token, file)`
-- `changeMyPassword(token, oldPassword, newPassword)`
+- `changeMyPassword(token, oldPassword, newPassword)` → `{ token }` ใหม่ (session อื่นของผู้ใช้นี้หลุด)
 - **[admin]** `listUsers(token)` (ไม่คืน salt/hash), `createUser(token, { username, displayName, role, password })`, `resetPassword(token, username, newPassword)`, `deleteUser(token, username)`
 
 การเขียนข้อมูลทุกครั้งต้องอยู่ใน `LockService.getScriptLock()` และเขียน AuditLog ภายใน lock เดียวกัน
@@ -225,6 +229,9 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - **ห้ามสร้าง GAS deployment ใหม่** ให้อัปเดต deployment เดิมด้วย `deploymentId` ของร้านนั้นใน `shops.json` เท่านั้น เพราะ URL `/exec` จะเปลี่ยนและ Worker จะใช้ไม่ได้
 - **ห้าม push โค้ดร้านหนึ่งไปอีก Script ID** — เรียก clasp ผ่าน `npm run gas -- <shop> ...` เสมอ ไม่รัน `clasp` ตรงๆ ใน `gas/`
 - **ห้ามแก้โค้ดใน Apps Script editor ออนไลน์** เพราะ `clasp push` จะเขียนทับ
+- ฟังก์ชัน top-level ที่ไม่ลงท้ายด้วย `_` ถูกเรียกจากเว็บได้ผ่าน `google.script.run` (web app รันในนามเจ้าของ) → helper ภายในต้องลงท้าย `_` เสมอ, ฟังก์ชัน API ต้องเรียก `requireUser_`, ฟังก์ชันเมนู/setup/ทดสอบต้องเรียก `requireEditorContext_`
+- ข้อความผู้ใช้ที่ขึ้นต้นด้วย `= + - @` ต้องผ่าน `toCell_` (กัน formula injection) และทุกแท็บตั้ง format เป็น plain text
+- รัน `npm run test:gas` ก่อน push โค้ด `gas/` ทุกครั้ง
 - ห้าม commit: `.clasprc.json`, `API_SECRET`, รหัสผ่าน, `.dev.vars`
 - `navigator.clipboard` อาจถูกบล็อกใน iframe ของ GAS → ต้องมี fallback `document.execCommand('copy')`
 - `sessionStorage`/`localStorage` ใน GAS อาจใช้ไม่ได้ → ห่อด้วย try/catch และต้องทำงานได้แม้ไม่มี (เก็บ token ในตัวแปร)

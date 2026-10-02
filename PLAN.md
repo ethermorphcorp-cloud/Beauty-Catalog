@@ -80,14 +80,16 @@
 
 > **สั่ง Claude Code:** `ทำ Phase 2`
 
-- [ ] `Setup.gs`: `setup()` สร้างแท็บ Products / Categories / Settings / **AuditLog** พร้อม header, ตั้งโฟลเดอร์หลักใน Drive (ถามลิงก์โฟลเดอร์ของร้าน — ดู `shops.json` → `rootFolderId`), สร้าง `API_SECRET` แบบสุ่ม (ถ้ายังไม่มี) — ต้องรันซ้ำได้โดยไม่ทำข้อมูลเดิมเสียหาย
-- [ ] `onOpen()` เพิ่มเมนู **Catalog** ใน Sheet: "ตั้งค่าเริ่มต้น", "สร้าง/รีเซ็ตผู้ใช้ admin" (prompt ชื่อผู้ใช้ + รหัสผ่าน ด้วย `SpreadsheetApp.getUi().prompt` — ใช้ตอนเริ่มระบบหรือกู้คืนเมื่อลืมรหัส), "แสดง API_SECRET" (สำหรับคัดลอกไปใส่ Worker)
-- [ ] `Auth.gs`: ผู้ใช้หลายคนใน Script Properties `USERS`, role `admin`/`staff`, hash + salt, session token ใน CacheService 6 ชม., ล็อกชั่วคราวเมื่อใส่ผิด 5 ครั้งใน 15 นาทีต่อ username, ฟังก์ชันจัดการผู้ใช้ [admin] + `changeMyPassword`
-- [ ] `Audit.gs`: append แถวลงแท็บ AuditLog ทุกการเขียน (ไม่บันทึกรหัสผ่าน)
-- [ ] `Products.gs`, `Drive.gs`, `Settings.gs` ตามสัญญา API ใน CLAUDE.md หัวข้อ 5 — `productId` สร้างอัตโนมัติ, แก้ `code` ได้ + เก็บ `oldCodes`, โฟลเดอร์รูปชื่อตาม `productId`, จัดการหมวดหมู่ (เพิ่ม/เปลี่ยนชื่อ/ลบเมื่อว่าง)
-- [ ] `Api.gs`: `?api=product` และ `?api=settings` ตรวจ `key`; ค้นรหัสเก่าใน `oldCodes` แล้วคืน `redirect`
-- [ ] `Sync.gs`: POST ไป `{workerUrl}/__sync` หลัง create/update/setStatus/อัปโหลดหรือลบรูป/saveSettings (ข้ามถ้ายังไม่ได้ตั้ง workerUrl)
-- [ ] `Main.gs`: `doGet(e)` → มี `api` ส่ง JSON, ไม่มีส่งหน้า admin; ตั้ง `setXFrameOptionsMode` และ viewport meta
+- [x] `Setup.gs`: `setup()` สร้างแท็บ Products / Categories / Settings / **AuditLog** พร้อม header, ตั้งโฟลเดอร์หลักใน Drive (ถามลิงก์โฟลเดอร์ของร้าน — ดู `shops.json` → `rootFolderId`), สร้าง `API_SECRET` แบบสุ่ม (ถ้ายังไม่มี) — ต้องรันซ้ำได้โดยไม่ทำข้อมูลเดิมเสียหาย
+- [x] `onOpen()` เพิ่มเมนู **Catalog** ใน Sheet: "ตั้งค่าเริ่มต้น", "สร้าง/รีเซ็ตผู้ใช้ admin" (prompt ชื่อผู้ใช้ + รหัสผ่าน ด้วย `SpreadsheetApp.getUi().prompt` — ใช้ตอนเริ่มระบบหรือกู้คืนเมื่อลืมรหัส), "แสดง API_SECRET" (สำหรับคัดลอกไปใส่ Worker)
+- [x] `Auth.gs`: ผู้ใช้หลายคนใน Script Properties `USERS`, role `admin`/`staff`, hash + salt, session token ใน CacheService 6 ชม., ล็อกชั่วคราวเมื่อใส่ผิด 5 ครั้งใน 15 นาทีต่อ username, ฟังก์ชันจัดการผู้ใช้ [admin] + `changeMyPassword`
+- [x] `Audit.gs`: append แถวลงแท็บ AuditLog ทุกการเขียน (ไม่บันทึกรหัสผ่าน)
+- [x] `Products.gs`, `Drive.gs`, `Settings.gs` ตามสัญญา API ใน CLAUDE.md หัวข้อ 5 — `productId` สร้างอัตโนมัติ, แก้ `code` ได้ + เก็บ `oldCodes`, โฟลเดอร์รูปชื่อตาม `productId`, จัดการหมวดหมู่ (เพิ่ม/เปลี่ยนชื่อ/ลบเมื่อว่าง)
+- [x] `Api.gs`: `?api=product` และ `?api=settings` ตรวจ `key`; ค้นรหัสเก่าใน `oldCodes` แล้วคืน `redirect`
+- [x] `Sync.gs`: POST ไป `{workerUrl}/__sync` หลัง create/update/setStatus/อัปโหลดหรือลบรูป/saveSettings (ข้ามถ้ายังไม่ได้ตั้ง workerUrl)
+- [x] `Main.gs`: `doGet(e)` → มี `api` ส่ง JSON, ไม่มีส่งหน้า admin; ตั้ง `setXFrameOptionsMode` และ viewport meta
+
+- [x] `SelfTest.gs` + `tests/gas-harness.cjs` (`npm run test:gas` — 21/21 ผ่านบน mock, 2026-10-03)
 
 **เสร็จเมื่อ:** `npm run gas -- all push` ผ่าน และมีฟังก์ชันทดสอบ `_selfTest()` ที่สร้าง/แก้ (รวมเปลี่ยนรหัส)/ซ่อนสินค้าทดสอบ ตรวจ redirect รหัสเก่า และตรวจสิทธิ์ staff ห้ามจัดการผู้ใช้ แล้วลบแถวทดสอบทิ้ง, commit `phase 2: gas backend`
 
