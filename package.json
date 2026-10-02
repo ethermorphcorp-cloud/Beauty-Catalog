@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "gas": "node scripts/gas.mjs"
+    "gas": "node scripts/gas.mjs",
+    "test:gas": "node tests/gas-harness.cjs"
   }
 }
