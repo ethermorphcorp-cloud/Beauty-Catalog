@@ -3,12 +3,14 @@
     "displayName": "NPBeauty",
     "scriptId": "10kH9xDUsuHW1IvY7OTqU2qIbRnVKAsHcrXveF440GRSAnqgV0fu_ERkt",
     "deploymentId": "",
+    "rootFolderId": "1Zwug4PAAD4oaN5F1lKuM6L8MGrHCd80B",
     "workerEnv": "npbeauty"
   },
   "lemonbeauty": {
     "displayName": "LemonBeauty",
     "scriptId": "16CtkagFc6n8lbdFtYRdto7P1Kiw5Vg23UoprFMCaBRdbIpFwoD9mkC27",
     "deploymentId": "",
+    "rootFolderId": "1c9YSaJZ8l4nsgskh9tXRxzIPOzLmGATU",
     "workerEnv": "lemonbeauty"
   }
 }

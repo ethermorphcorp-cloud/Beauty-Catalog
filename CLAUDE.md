@@ -15,21 +15,23 @@
 | หน้าบ้าน | Cloudflare Worker + KV | หน้าสินค้าสำหรับลูกค้าที่ `/p/{code}` พร้อม OG tags ให้ LINE แสดงพรีวิวรูป |
 
 ```
-ลูกค้า ─> Worker /p/{code} ─(KV hit)──> render HTML
+ลูกค้า ─> Worker /p/{code} ─(KV hit)──> render HTML (หรือ 301 ถ้าเป็นรหัสเก่า)
                          └─(KV miss)─> GAS ?api=product ─> Sheet/Drive ─> เก็บลง KV ─> render
-Admin ─> GAS /exec (รหัสผ่าน) ─บันทึก─> Sheet/Drive ─POST /__sync─> Worker เขียน KV
+Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) ─บันทึก─> Sheet/Drive + AuditLog ─POST /__sync─> Worker เขียน KV
 ```
+
+**UI อ้างอิง (ผู้ใช้อนุมัติแล้ว 2026-10-03):** https://claude.ai/artifact/TBdXkpz28tFKTUS4h2E6iE — canvas mockup ทุกหน้าจอ (หน้าลูกค้า, admin มือถือ/จอใหญ่, แท็บ AuditLog) ทำ UI ให้ตรงกับ mockup นี้
 
 เหตุผลที่แยกหน้าบ้านไปไว้ที่ Worker: หน้า `/exec` ของ GAS แสดงผลใน iframe ทำให้ LINE อ่าน OG tags ไม่ได้ (ไม่มีพรีวิวรูป), ลิงก์ยาว, มีแถบเตือนของ Google และโหลดช้า
 
 ### ร้านในระบบ (2 ร้าน แยกระบบกัน ใช้โค้ดชุดเดียว)
 
-แต่ละร้านมี Google Sheet + Apps Script project + deployment + โฟลเดอร์ Drive + Worker + KV + `API_SECRET` + รหัสผ่าน admin **เป็นของตัวเอง** ข้อมูลไม่ปนกัน รหัสสินค้าซ้ำข้ามร้านได้ โค้ดใน `gas/` และ `worker/` ใช้ร่วมกัน ห้ามใส่ค่าเฉพาะร้านในโค้ด (ค่าร้านอยู่ใน Sheet `Settings`, Script Properties, `shops.json` และ env ของ Worker)
+แต่ละร้านมี Google Sheet + Apps Script project + deployment + โฟลเดอร์ Drive + Worker + KV + `API_SECRET` + ผู้ใช้ admin/staff **เป็นของตัวเอง** ข้อมูลไม่ปนกัน รหัสสินค้าซ้ำข้ามร้านได้ โค้ดใน `gas/` และ `worker/` ใช้ร่วมกัน ห้ามใส่ค่าเฉพาะร้านในโค้ด (ค่าร้านอยู่ใน Sheet `Settings`, Script Properties, `shops.json` และ env ของ Worker)
 
-| key (`shops.json` / wrangler env) | ชื่อร้าน | Worker URL |
-|---|---|---|
-| `npbeauty` | NPBeauty | `https://npbeauty.ethermorph-corp.workers.dev` |
-| `lemonbeauty` | LemonBeauty | `https://lemonbeauty.ethermorph-corp.workers.dev` |
+| key (`shops.json` / wrangler env) | ชื่อร้าน | Worker URL | สีหลักเริ่มต้น (จากโลโก้) |
+|---|---|---|---|
+| `npbeauty` | NPBeauty | `https://npbeauty.ethermorph-corp.workers.dev` | `#1F5FAE` |
+| `lemonbeauty` | LemonBeauty | `https://lemonbeauty.ethermorph-corp.workers.dev` | `#8E4AA8` |
 
 - Cloudflare account subdomain: `ethermorph-corp.workers.dev` (ใช้ร่วมกันทุกร้าน) — ใช้ workers.dev ไปก่อน ผูก Custom Domain ทีหลังได้โดยไม่ต้องแก้โค้ด
 - โควตา free plan (KV write 1,000/วัน, Workers ~100,000 request/วัน) เป็นของบัญชี **ใช้ร่วมกันทุกร้าน**
@@ -40,20 +42,26 @@ Admin ─> GAS /exec (รหัสผ่าน) ─บันทึก─> Sheet/
 ## 2. การตัดสินใจที่ยืนยันแล้ว (ห้ามเปลี่ยนโดยไม่ถามผู้ใช้)
 
 - **หลายร้าน:** 2 ร้าน (NPBeauty, LemonBeauty) แยกระบบกันคนละชุด ใช้โค้ดร่วมกันใน repo เดียว (ดูหัวข้อ 1 "ร้านในระบบ")
-- **ลิงก์ลูกค้า:** `{WORKER_URL}/p/{code}` หนึ่งลิงก์ต่อสินค้า (`WORKER_URL` ของแต่ละร้าน)
-- **เข้า admin:** GAS `/exec` (ไม่มีพารามิเตอร์) → หน้าใส่รหัสผ่าน รหัสเก็บเป็น hash ใน Script Properties
-- **รหัสสินค้า:** ผู้ใช้กรอกเอง ต้องไม่ซ้ำ (เทียบแบบไม่สนตัวพิมพ์เล็ก-ใหญ่) ใช้ได้เฉพาะ `^[A-Za-z0-9_-]{1,40}$` และ**แก้ไม่ได้หลังสร้าง**
-- **ฟิลด์สินค้า:** รหัสสินค้า | ชื่อสินค้า | หมวดหมู่ | รายละเอียด | โฟลเดอร์รูป | สถานะ
+- **ลิงก์ลูกค้า:** `{WORKER_URL}/p/{code}` หนึ่งลิงก์ต่อสินค้า (`WORKER_URL` ของแต่ละร้าน) ถ้าเปลี่ยนรหัสสินค้า ลิงก์รหัสเก่าต้อง **301 redirect** ไปรหัสใหม่ (ลิงก์ที่ส่งใน LINE แล้วต้องไม่เสีย)
+- **เข้า admin:** GAS `/exec` (ไม่มีพารามิเตอร์) → หน้า login **ชื่อผู้ใช้ + รหัสผ่าน** ผู้ใช้หลายคนต่อร้าน เก็บใน Script Properties (`USERS`) รหัสผ่านเป็น salted hash
+- **สิทธิ์ 2 ระดับ:** `admin` และ `staff` — staff ทำได้ทุกอย่าง (สินค้า, หมวดหมู่, ตั้งค่าร้าน, นำเข้า CSV) **ยกเว้น**จัดการผู้ใช้ เฉพาะ admin ที่ ดูรายชื่อผู้ใช้ / สร้างผู้ใช้ / ตั้งรหัสผ่านใหม่ให้ผู้อื่น / ลบผู้ใช้ ทุกคนเปลี่ยนรหัสผ่านตัวเองได้ admin ลบตัวเองไม่ได้ และต้องเหลือ admin อย่างน้อย 1 คนเสมอ
+- **Product ID vs รหัสสินค้า:** แยกกัน 2 ฟิลด์
+  - `productId` — ระบบสร้าง รูปแบบ `P` + เลข 6 หลัก (`P000001`) เรียงต่อจากค่ามากสุด **ห้ามแก้** ใช้เป็น key ภายในทุกที่ (API, AuditLog, ชื่อโฟลเดอร์รูป)
+  - `code` (รหัสสินค้า) — ผู้ใช้กรอกและ**แก้ได้** ต้องไม่ซ้ำกับ `code` ปัจจุบันของสินค้าอื่น (เทียบแบบไม่สนตัวพิมพ์) ใช้ได้เฉพาะ `^[A-Za-z0-9_-]{1,40}$` เมื่อแก้ รหัสเดิมถูกเก็บใน `oldCodes` เพื่อ redirect ถ้ารหัสใหม่ไปตรงกับ `oldCodes` ของสินค้าอื่น ให้ลบออกจากสินค้านั้น (รหัสปัจจุบันชนะเสมอ)
+- **ฟิลด์สินค้า:** Product ID | รหัสสินค้า | ชื่อสินค้า | หมวดหมู่ | รายละเอียด | โฟลเดอร์รูป | สถานะ
 - **รูปภาพ:** สินค้าละหลายรูป เก็บในโฟลเดอร์ Drive ของสินค้านั้น เรียงตามชื่อไฟล์ รูปแรกเป็นรูปปก รับรูปได้ 2 ทาง
-  1. อัปโหลดผ่านแอป → ระบบสร้างโฟลเดอร์ชื่อตามรหัสสินค้าใต้โฟลเดอร์หลัก
+  1. อัปโหลดผ่านแอป → ระบบสร้างโฟลเดอร์**ชื่อตาม `productId`** ใต้โฟลเดอร์หลักของร้าน (เปลี่ยนรหัสสินค้าแล้วไม่ต้องเปลี่ยนชื่อโฟลเดอร์)
   2. วางลิงก์โฟลเดอร์ Drive ที่มีอยู่แล้ว
 - **ย่อรูปฝั่งเบราว์เซอร์** ก่อนอัปโหลด: ด้านยาวไม่เกิน 1600px, JPEG quality 0.85, อัปโหลดทีละไฟล์
-- **Batch:** อัปโหลดไฟล์ CSV (UTF-8) คอลัมน์ `code,name,category,description,folder_url` โดย `folder_url` ไม่บังคับ ถ้าว่างระบบสร้างโฟลเดอร์เปล่าให้ ต้องแสดงตารางตัวอย่างพร้อมสถานะของแต่ละแถว (ใหม่ / รหัสซ้ำ / ข้อมูลไม่ครบ) ก่อนกดยืนยัน
-- **หมวดหมู่:** dropdown จากแท็บ `Categories` และพิมพ์หมวดใหม่ได้ (เพิ่มเข้าแท็บอัตโนมัติ)
-- **เลิกขาย:** ใช้สถานะ `active` / `hidden` ไม่มีการลบสินค้า ลิงก์ของสินค้าที่ hidden แสดงข้อความ "สินค้านี้ไม่พร้อมจำหน่าย"
+- **Batch (เฉพาะจอใหญ่ ≥1024px):** อัปโหลดไฟล์ CSV (UTF-8) คอลัมน์ `code,name,category,description,folder_url` โดย `folder_url` ไม่บังคับ ถ้าว่างระบบสร้างโฟลเดอร์เปล่าให้ ต้องแสดงตารางตัวอย่างพร้อมสถานะของแต่ละแถว (ใหม่ / รหัสซ้ำ / ข้อมูลไม่ครบ) ก่อนกดยืนยัน **บนมือถือไม่มีเมนูนำเข้า CSV**
+- **หมวดหมู่:** dropdown จากแท็บ `Categories` และพิมพ์หมวดใหม่ได้ (เพิ่มเข้าแท็บอัตโนมัติ) + จัดการในตั้งค่า › หมวดหมู่สินค้า: เพิ่ม / เปลี่ยนชื่อ (สินค้าในหมวดเปลี่ยนตาม) / ลบ (เฉพาะหมวดที่ไม่มีสินค้า) แสดงจำนวนสินค้าต่อหมวด
+- **เลิกขาย:** ใช้สถานะ `active` / `hidden` ไม่มีการลบสินค้า ลิงก์ของสินค้าที่ hidden แสดงข้อความ "สินค้านี้ไม่พร้อมจำหน่าย" สลับแสดง/ซ่อนได้**จากสวิตช์บนการ์ดในหน้ารายการสินค้า**โดยตรง (ทั้งมือถือและจอใหญ่) และในหน้าแก้ไข
+- **หน้าสรุปรายการสินค้า:** stat card จำนวนทั้งหมด / แสดง (active) / ซ่อน (hidden) + การ์ดแยกตามหมวดหมู่ (จำนวน, แถบสัดส่วน, แสดง·ซ่อน) กดการ์ดหมวดแล้วเปิดรายการสินค้าที่กรองหมวดนั้น คำนวณฝั่ง client จาก `listProducts`
+- **AuditLog:** ทุกการเขียนข้อมูลบันทึกลงแท็บ `AuditLog` ใน Sheet (append อย่างเดียว ห้ามแก้/ลบแถวเดิม) หนึ่งแถวต่อหนึ่งฟิลด์ที่เปลี่ยน ห้ามบันทึกรหัสผ่านหรือ hash
 - **หน้าสินค้า:** แกลเลอรีรูป (ปัดได้บนมือถือ), ชื่อ, หมวด, รายละเอียด (ข้อความธรรมดา รักษาการขึ้นบรรทัด) และปุ่ม "ทัก LINE" ที่เปิด LINE OA พร้อมข้อความ `สนใจสินค้า {code} {name}`
 - **ไม่มี:** ราคา, สต็อก, ตะกร้า, สินค้าที่เกี่ยวข้อง
-- **ตั้งค่าร้าน:** เมนูตั้งค่าใน admin สำหรับ ชื่อร้าน, โลโก้, LINE OA ID, สีหลัก และ Worker URL
+- **ตั้งค่า:** 3 แท็บ — **ร้านค้า** (ชื่อร้าน, โลโก้, LINE OA ID, สีหลัก, Worker URL) / **หมวดหมู่สินค้า** / **ผู้ใช้งาน** (admin เห็นรายชื่อ + เพิ่ม/ตั้งรหัสใหม่/ลบ, staff เห็นแค่ตัวเอง; ทุกคนเปลี่ยนรหัสผ่านตัวเองได้)
+- **เมนูหลัก admin:** มือถือ = แถบล่าง **ไม่มีกรอบ** 4 ปุ่ม `เพิ่มสินค้า · รายการสินค้า · สรุป · ตั้งค่า` (รายการสินค้าเป็นหน้าแรก, ปุ่มที่เลือกเป็นสีหลัก ตัวหนา ไอคอนใหญ่) / จอใหญ่ = แท็บบน `รายการสินค้า · สรุป · เพิ่มสินค้า · นำเข้า CSV · ตั้งค่า`
 - **ปุ่ม copy ลิงก์:** คัดลอกข้อความ `{name}\n{WORKER_URL}/p/{code}`
 - **ค้นหา (admin):** ค้นหาจากรหัสและชื่อ โหลดรายการทั้งหมดครั้งเดียวแล้วกรองฝั่ง client ทันทีที่พิมพ์
 
@@ -68,7 +76,7 @@ Admin ─> GAS /exec (รหัสผ่าน) ─บันทึก─> Sheet/
 /WORKPLAN.md                checklist / สถานะงานปัจจุบัน
 /.gitignore
 /package.json               npm run gas -- <shop|all> <push|deploy|open>
-/shops.json                 รายชื่อร้าน: scriptId, deploymentId, workerEnv (ไม่ใช่ความลับ)
+/shops.json                 รายชื่อร้าน: scriptId, deploymentId, rootFolderId, workerEnv (ไม่ใช่ความลับ)
 /scripts/
   gas.mjs                   เขียน gas/.clasp.json จาก shops.json แล้วรัน clasp
 /gas/
@@ -76,7 +84,8 @@ Admin ─> GAS /exec (รหัสผ่าน) ─บันทึก─> Sheet/
   appsscript.json
   Main.gs                   doGet routing
   Setup.gs                  setup(), onOpen() เมนูใน Sheet
-  Auth.gs                   login, session, hash
+  Auth.gs                   login, session, hash, ผู้ใช้และสิทธิ์ (admin/staff)
+  Audit.gs                  เขียนแท็บ AuditLog
   Products.gs               CRUD, ค้นหา, import CSV
   Drive.gs                  โฟลเดอร์, อัปโหลด, ตั้งค่าแชร์, list รูป
   Settings.gs               ตั้งค่าร้าน, หมวดหมู่
@@ -106,47 +115,56 @@ Admin ─> GAS /exec (รหัสผ่าน) ─บันทึก─> Sheet/
 
 | คอลัมน์ | ชนิด | หมายเหตุ |
 |---|---|---|
-| code | string | primary key, ห้ามแก้ |
+| productId | string | primary key ระบบสร้าง `P000001` ห้ามแก้ |
+| code | string | รหัสสินค้า ผู้ใช้แก้ได้ unique (ไม่สนตัวพิมพ์) |
 | name | string | บังคับ |
 | category | string | |
 | description | string | ข้อความธรรมดา มีขึ้นบรรทัดได้ |
 | folderId | string | Drive folder ID |
 | folderUrl | string | |
 | status | `active` \| `hidden` | ค่าเริ่มต้น `active` |
+| oldCodes | string | รหัสเก่าคั่นด้วย `,` ใช้ redirect |
 | createdAt | ISO datetime | |
 | updatedAt | ISO datetime | |
+| updatedBy | string | username ล่าสุดที่แก้ |
 
 **แท็บ `Categories`**: คอลัมน์ `name`
 
 **แท็บ `Settings`**: คอลัมน์ `key | value` โดยมี key คือ `shopName`, `logoFileId`, `lineOaId`, `primaryColor`, `workerUrl`
 
+**แท็บ `AuditLog`** (append อย่างเดียว): `timestamp | user | action | productId | code | field | before | after`
+- action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`
+- `updateProduct` / `saveSettings` บันทึก 1 แถวต่อฟิลด์ที่ค่าเปลี่ยนจริง; ค่า before/after ยาวเกิน 500 ตัวอักษรให้ตัด
+
 **Script Properties** (ห้ามเก็บใน Sheet)
 
 | key | ค่า |
 |---|---|
-| `ADMIN_PASSWORD_HASH` | SHA-256 ของ `salt + password` (hex) |
-| `ADMIN_PASSWORD_SALT` | random string |
+| `USERS` | JSON array `[{ username, displayName, role: "admin"\|"staff", salt, hash, createdAt, lastLoginAt }]` — `hash` = SHA-256 hex ของ `salt + password`, `username` ตรง `^[a-z0-9_.-]{3,30}$`, รหัสผ่านอย่างน้อย 8 ตัว |
 | `API_SECRET` | random 32+ ตัวอักษร ใช้ค่าเดียวกับ Worker |
-| `ROOT_FOLDER_ID` | โฟลเดอร์หลักใน Drive ที่ `setup()` สร้าง |
+| `ROOT_FOLDER_ID` | โฟลเดอร์หลักใน Drive ของร้าน (ร้านละโฟลเดอร์ ระบุไว้แล้วใน `shops.json` → `rootFolderId`) `setup()` ถามลิงก์โฟลเดอร์ผ่าน prompt ถ้ายังไม่ได้ตั้ง (เว้นว่าง = สร้างใหม่) และตรวจว่าเปิดได้ |
 
 ---
 
 ## 5. สัญญา API
 
 ### GAS → admin UI (ผ่าน `google.script.run`)
-ทุกฟังก์ชัน (ยกเว้น `login`) รับ `token` เป็นพารามิเตอร์แรก และตรวจกับ `CacheService` ก่อนทำงาน
+ทุกฟังก์ชัน (ยกเว้น `login`) รับ `token` เป็นพารามิเตอร์แรก ตรวจ session ใน `CacheService` (เก็บ `{ username, role }`) และตรวจว่าผู้ใช้ยังอยู่ใน `USERS` ก่อนทำงาน (ผู้ใช้ที่ถูกลบหลุดทันที) ฟังก์ชันที่ระบุ **[admin]** ต้องตรวจ role ฝั่ง server ด้วย ไม่ใช่แค่ซ่อนปุ่ม
 คืนค่ารูปแบบ `{ ok: true, data }` หรือ `{ ok: false, error: "ข้อความภาษาไทย" }`
+สินค้าอ้างอิงด้วย `productId` เสมอ (ไม่ใช่ `code`)
 
-- `login(password)` → `{ token }` (session 6 ชม.; ผิด 5 ครั้งใน 15 นาที ล็อกชั่วคราว)
-- `listProducts(token)`, `getProduct(token, code)`
-- `createProduct(token, product)`, `updateProduct(token, code, fields)`, `setStatus(token, code, status)`
+- `login(username, password)` → `{ token, user: { username, displayName, role } }` (session 6 ชม.; ผิด 5 ครั้งใน 15 นาทีต่อ username ล็อกชั่วคราว; ข้อความผิดไม่บอกว่าผิดที่ชื่อหรือรหัส), `logout(token)`, `me(token)`
+- `listProducts(token)`, `getProduct(token, productId)`
+- `createProduct(token, product)` → สร้าง `productId`, `updateProduct(token, productId, fields)` (รวม `code`), `setStatus(token, productId, status)`
 - `previewCsv(token, rows)` → สถานะรายแถว / `importCsv(token, rows)` รับทีละไม่เกิน 50 แถว
-- `uploadImage(token, code, { name, mimeType, base64 })`, `listImages(token, code)`, `removeImage(token, code, fileId)` (ย้ายไปถังขยะของ Drive)
-- `linkFolder(token, code, folderUrl)`
-- `getCategories(token)`, `addCategory(token, name)`
+- `uploadImage(token, productId, { name, mimeType, base64 })`, `listImages(token, productId)`, `removeImage(token, productId, fileId)` (ย้ายไปถังขยะของ Drive)
+- `linkFolder(token, productId, folderUrl)`
+- `getCategories(token)` → `[{ name, count }]`, `addCategory(token, name)`, `renameCategory(token, oldName, newName)` (อัปเดตสินค้าในหมวด + sync), `deleteCategory(token, name)` (เฉพาะ count = 0)
 - `getSettings(token)`, `saveSettings(token, settings)`, `uploadLogo(token, file)`
+- `changeMyPassword(token, oldPassword, newPassword)`
+- **[admin]** `listUsers(token)` (ไม่คืน salt/hash), `createUser(token, { username, displayName, role, password })`, `resetPassword(token, username, newPassword)`, `deleteUser(token, username)`
 
-การเขียนข้อมูลทุกครั้งต้องอยู่ใน `LockService.getScriptLock()`
+การเขียนข้อมูลทุกครั้งต้องอยู่ใน `LockService.getScriptLock()` และเขียน AuditLog ภายใน lock เดียวกัน
 
 ### GAS public JSON (สำหรับ Worker)
 `GET {GAS_URL}?api=product&code={code}&key={API_SECRET}`
@@ -154,21 +172,23 @@ Admin ─> GAS /exec (รหัสผ่าน) ─บันทึก─> Sheet/
 
 ```json
 { "ok": true,
-  "product": { "code": "", "name": "", "category": "", "description": "", "status": "active", "updatedAt": "" },
+  "product": { "productId": "", "code": "", "name": "", "category": "", "description": "", "status": "active", "updatedAt": "" },
   "images": [ { "id": "", "name": "" } ] }
 ```
+- ค้นหา `code` ปัจจุบันก่อน ถ้าไม่เจอค่อยค้นใน `oldCodes` → `{ ok:true, redirect:"<code ปัจจุบัน>" }`
 - `key` ผิด → `{ ok:false, error:"forbidden" }`, ไม่พบ → `{ ok:false, error:"not_found" }`
 - `doGet` ของ GAS อ่าน HTTP header ไม่ได้ จึงต้องส่ง secret ทาง query string
 
 ### GAS → Worker (หลังบันทึก)
-`POST {workerUrl}/__sync` header `X-Api-Secret: {API_SECRET}` body `{ type: "product", data: {...} }` หรือ `{ type: "settings", data: {...} }`
+`POST {workerUrl}/__sync` header `X-Api-Secret: {API_SECRET}` body `{ type: "product", data: { product, images }, oldCodes: [...] }` หรือ `{ type: "settings", data: {...} }`
+- เมื่อรหัสสินค้าเปลี่ยน Worker เขียน `p:{code ใหม่}` = ข้อมูลสินค้า และ `p:{code เก่า}` = `{ redirect: "<code ใหม่>" }`
 ถ้า sync ล้มเหลว ห้ามทำให้การบันทึกใน Sheet ล้มเหลว ให้แจ้งเตือนใน UI แทน
 **การ import CSV ไม่ต้อง sync** (KV free plan เขียนได้ 1,000 ครั้ง/วัน) ปล่อยให้ Worker ดึงเองเมื่อมีคนเปิดครั้งแรก
 
 ### Worker routes
 | route | หน้าที่ |
 |---|---|
-| `GET /p/{code}` | อ่าน KV `p:{code ตัวเล็ก}` + `settings` → ถ้าไม่มี ดึงจาก GAS แล้วเก็บ → render HTML |
+| `GET /p/{code}` | อ่าน KV `p:{code ตัวเล็ก}` + `settings` → ถ้าไม่มี ดึงจาก GAS แล้วเก็บ → render HTML; ถ้าค่าเป็น `{ redirect }` → HTTP 301 ไป `/p/{redirect}` |
 | `GET /img/{fileId}?w=1200&s={hmac}` | ตรวจ HMAC แล้ว proxy รูปจาก `https://drive.google.com/thumbnail?id={fileId}&sz=w{w}` แคชด้วย Cache API 30 วัน |
 | `POST /__sync` | ตรวจ `X-Api-Secret` แล้วเขียน KV |
 | `GET /` | หน้าเรียบๆ แสดงชื่อร้าน |
@@ -194,7 +214,8 @@ Admin ─> GAS /exec (รหัสผ่าน) ─บันทึก─> Sheet/
 - ปุ่มและจุดกดต้องสูงอย่างน้อย 44px, ห้ามมี horizontal scroll
 - หน้าสินค้า: มือถือแสดงรูปด้านบนแบบปัด (CSS scroll-snap) + จุดบอกตำแหน่ง; จอใหญ่แสดงรูปซ้าย ข้อมูลขวา มีรูปย่อให้กดเลือก
 - ปุ่ม "ทัก LINE" บนมือถือติดอยู่ล่างจอ (sticky)
-- admin: แท็บ "สินค้า" (ค้นหา + รายการ + ปุ่ม copy/แก้ไข), "เพิ่มสินค้า", "นำเข้า CSV", "ตั้งค่า"; การแก้ไขเปิดเป็น drawer/หน้าเต็มบนมือถือ
+- admin: ทำตาม mockup ที่อนุมัติ (ลิงก์ในหัวข้อ 1) — เมนูตามหัวข้อ 2; การ์ดสินค้ามี รูปปก, รหัส, ชื่อ, หมวด, สวิตช์แสดง/ซ่อน, ปุ่ม copy ลิงก์ และแก้ไข (สินค้าที่ซ่อนแสดงจางลง); การแก้ไขเปิดเป็น drawer บนจอใหญ่ / หน้าเต็มบนมือถือ; หน้าแก้ไขแสดง Product ID แบบล็อก + ช่องรหัสสินค้าที่แก้ได้
+- สถานะสีของ toggle/ป้ายต้องต่างกันทั้งสีและข้อความ (ไม่ใช้สีอย่างเดียว); ถ้าสีหลักสว่าง (luminance > 0.6) ตัวอักษรบนสีหลักใช้สีเข้ม
 - ทุกการกระทำต้องมี loading state และ toast แจ้งผลเป็นภาษาไทย
 
 ---

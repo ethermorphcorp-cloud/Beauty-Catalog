@@ -1,6 +1,6 @@
 # Working Plan & Checklist — Beauty Catalog
 
-อัปเดตล่าสุด: 2026-10-02 · รายละเอียดแต่ละเฟสอยู่ใน `PLAN.md` · สเปกอยู่ใน `CLAUDE.md`
+อัปเดตล่าสุด: 2026-10-03 · รายละเอียดแต่ละเฟสอยู่ใน `PLAN.md` · สเปกอยู่ใน `CLAUDE.md`
 
 ## ร้านในระบบ
 
@@ -10,6 +10,18 @@
 | LemonBeauty | `lemonbeauty` | https://lemonbeauty.ethermorph-corp.workers.dev | `16CtkagF…mkC27` | ⏳ |
 
 แยกระบบกันคนละชุด (Sheet, Apps Script, Drive, Worker, KV, secret, รหัสผ่าน) ใช้โค้ดชุดเดียวใน repo นี้ · ใช้ workers.dev ไปก่อน ผูกโดเมนทีหลังได้
+
+## UI ที่อนุมัติแล้ว (2026-10-03)
+
+Mockup: https://claude.ai/artifact/TBdXkpz28tFKTUS4h2E6iE — สีหลัก NPBeauty `#1F5FAE`, LemonBeauty `#8E4AA8` (จากโลโก้)
+
+การตัดสินใจรอบ UI (บันทึกใน CLAUDE.md หัวข้อ 2 แล้ว):
+- ผู้ใช้หลายคน สิทธิ์ admin / staff — จัดการผู้ใช้ได้เฉพาะ admin
+- Product ID (ระบบสร้าง) แยกจากรหัสสินค้า (แก้ได้) — ลิงก์รหัสเก่า 301 ไปรหัสใหม่, โฟลเดอร์รูปชื่อตาม Product ID
+- เมนูมือถือ 4 ปุ่มไม่มีกรอบ (เพิ่มสินค้า · รายการสินค้า · สรุป · ตั้งค่า), นำเข้า CSV เฉพาะจอใหญ่
+- สวิตช์แสดง/ซ่อนบนการ์ดรายการสินค้า, หน้าสรุป, ตั้งค่า 3 แท็บ, แท็บ AuditLog ใน Sheet
+
+⚠️ โลโก้ NP สะกด "BUEAUTY" — แจ้งผู้ใช้แล้ว รอไฟล์แก้
 
 ## สถานะเครื่องมือ (ตรวจ 2026-10-02)
 
@@ -39,7 +51,9 @@
 - [x] ใส่ Script ID → `npm run gas -- all push` → commit `phase 1: scaffold`
 
 ### Phase 2 — GAS หลังบ้าน · Phase 3 — หน้า admin [Claude Code]
-- [ ] โค้ดชุดเดียว push ไปทั้งสองร้าน
+- [x] ออกแบบ UI + อนุมัติ mockup
+- [ ] Phase 2: backend (ผู้ใช้/สิทธิ์, Product ID, AuditLog, หมวดหมู่, redirect)
+- [ ] Phase 3: admin UI ตาม mockup
 
 ### Phase 4 — Deploy GAS ครั้งแรก ×2 [คุณ + Claude Code]
 - [ ] ตั้งค่าเริ่มต้น, รหัสผ่าน, New deployment (ครั้งเดียวต่อร้าน) → ส่ง URL + Deployment ID
