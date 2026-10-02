@@ -1,0 +1,15 @@
+{
+  "name": "product-catalog-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:npbeauty": "wrangler dev --env npbeauty",
+    "dev:lemonbeauty": "wrangler dev --env lemonbeauty",
+    "deploy:npbeauty": "wrangler deploy --env npbeauty",
+    "deploy:lemonbeauty": "wrangler deploy --env lemonbeauty"
+  },
+  "devDependencies": {
+    "wrangler": "^4.86.0"
+  }
+}

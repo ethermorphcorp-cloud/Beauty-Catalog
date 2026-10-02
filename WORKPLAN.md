@@ -6,8 +6,8 @@
 
 | ร้าน | key | Worker URL | Script ID | Deployment ID |
 |---|---|---|---|---|
-| NPBeauty | `npbeauty` | https://npbeauty.ethermorph-corp.workers.dev | ⏳ | ⏳ |
-| LemonBeauty | `lemonbeauty` | https://lemonbeauty.ethermorph-corp.workers.dev | ⏳ | ⏳ |
+| NPBeauty | `npbeauty` | https://npbeauty.ethermorph-corp.workers.dev | `10kH9xDU…ERkt` | ⏳ |
+| LemonBeauty | `lemonbeauty` | https://lemonbeauty.ethermorph-corp.workers.dev | `16CtkagF…mkC27` | ⏳ |
 
 แยกระบบกันคนละชุด (Sheet, Apps Script, Drive, Worker, KV, secret, รหัสผ่าน) ใช้โค้ดชุดเดียวใน repo นี้ · ใช้ workers.dev ไปก่อน ผูกโดเมนทีหลังได้
 
@@ -18,7 +18,7 @@
 | Node.js / Git | ✅ v20.20.0 / 2.53.0 | |
 | clasp + login | ✅ 3.4.1 | แผนเดิมตรึง 2.4.2 — รอยืนยันใช้ v3 |
 | wrangler | ⚠️ 4.86.0 ยังไม่ login | `npx wrangler login` |
-| GitHub CLI | ⚠️ ยังไม่ login | `gh auth login` |
+| GitHub CLI | ✅ ethermorphcorp-cloud | git ใช้ credential จาก gh |
 | git repo | ✅ `git init` แล้ว | remote `origin` → ethermorphcorp-cloud/Beauty-Catalog |
 
 ## Checklist
@@ -27,16 +27,16 @@
 - [x] 0.1 สมัคร Cloudflare (Ethermorph.corp)
 - [ ] 0.1 ตั้ง account subdomain `ethermorph-corp`
 - [x] 0.2 GitHub repo: https://github.com/ethermorphcorp-cloud/Beauty-Catalog
-- [ ] 0.3 `gh auth login`
-- [ ] 0.4 Sheet `NPBeauty Catalog DB` + `LemonBeauty Catalog DB`
-- [ ] 0.5 Script ID ทั้งสองร้าน → ส่งให้ Claude Code
-- [ ] 0.6 เปิด Apps Script API
+- [x] 0.3 `gh auth login` (ethermorphcorp-cloud)
+- [x] 0.4 Sheet `NPBeauty Catalog DB` + `LemonBeauty Catalog DB`
+- [x] 0.5 Script ID ทั้งสองร้าน
+- [x] 0.6 เปิด Apps Script API
 - [ ] 0.7 `npx wrangler login`
 - [ ] 0.8 ข้อมูลร้าน ×2 (ชื่อ, โลโก้, LINE OA ID, สี)
 
 ### Phase 1 — โครง repo [Claude Code]
 - [x] โครงไฟล์, `shops.json`, `scripts/gas.mjs`, wrangler env 2 ร้าน
-- [ ] ใส่ Script ID → `npm run gas -- all push` → commit `phase 1: scaffold`
+- [x] ใส่ Script ID → `npm run gas -- all push` → commit `phase 1: scaffold`
 
 ### Phase 2 — GAS หลังบ้าน · Phase 3 — หน้า admin [Claude Code]
 - [ ] โค้ดชุดเดียว push ไปทั้งสองร้าน

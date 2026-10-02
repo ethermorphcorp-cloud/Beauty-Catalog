@@ -28,22 +28,22 @@
 - [x] Git — ตรวจด้วย `git --version`
 - [x] Claude Code — ตามคู่มือที่ https://docs.claude.com
 - [x] clasp (เครื่องนี้มี 3.4.1 — ดู CLAUDE.md หัวข้อ 8)
-- [ ] GitHub CLI: ติดตั้งแล้ว → รัน `gh auth login`
+- [x] GitHub CLI: `gh auth login` (ethermorphcorp-cloud)
 - [x] repo ในเครื่อง: โฟลเดอร์ `VALIN Catalog` (`git init` แล้ว)
 
 ### 0.4 สร้าง Google Sheet ×2
-- [ ] NPBeauty: https://sheets.new → ตั้งชื่อ `NPBeauty Catalog DB`
-- [ ] LemonBeauty: https://sheets.new → ตั้งชื่อ `LemonBeauty Catalog DB`
-- [ ] ไม่ต้องสร้างแท็บหรือ header เอง (`setup()` จะสร้างให้ใน Phase 4)
+- [x] NPBeauty: https://sheets.new → ตั้งชื่อ `NPBeauty Catalog DB`
+- [x] LemonBeauty: https://sheets.new → ตั้งชื่อ `LemonBeauty Catalog DB`
+- [x] ไม่ต้องสร้างแท็บหรือ header เอง (`setup()` จะสร้างให้ใน Phase 4)
 
 ### 0.5 สร้าง Apps Script project และหา Script ID ×2
-- [ ] ในแต่ละ Sheet เปิดเมนู **ส่วนขยาย (Extensions) → Apps Script**
-- [ ] ตั้งชื่อโปรเจกต์ `NPBeauty Catalog` / `LemonBeauty Catalog`
-- [ ] ⚙️ **Project Settings** → คัดลอก **Script ID** ของแต่ละร้านส่งให้ Claude Code (จะใส่ใน `shops.json`)
+- [x] ในแต่ละ Sheet เปิดเมนู **ส่วนขยาย (Extensions) → Apps Script**
+- [x] ตั้งชื่อโปรเจกต์ `NPBeauty Catalog` / `LemonBeauty Catalog`
+- [x] ⚙️ **Project Settings** → คัดลอก **Script ID** ของแต่ละร้านส่งให้ Claude Code (จะใส่ใน `shops.json`)
 - หมายเหตุ: ไม่ต้องสร้าง Google Cloud project หรือ GCP Project ID แยก clasp ใช้งานได้โดยไม่ต้องมี
 
 ### 0.6 เปิด Apps Script API
-- [ ] ไปที่ https://script.google.com/home/usersettings แล้วเปิด **Google Apps Script API** เป็น **On**
+- [x] ไปที่ https://script.google.com/home/usersettings แล้วเปิด **Google Apps Script API** เป็น **On**
 - ถ้าไม่เปิด `clasp push` จะ error
 
 ### 0.7 ล็อกอินเครื่องมือบนเครื่อง
@@ -66,7 +66,7 @@
 
 - [x] สร้างโครงโฟลเดอร์ตาม CLAUDE.md หัวข้อ 3
 - [x] `shops.json` + `scripts/gas.mjs` (เขียน `gas/.clasp.json` ตามร้านแล้วรัน clasp)
-- [ ] ใส่ Script ID ทั้งสองร้านใน `shops.json`
+- [x] ใส่ Script ID ทั้งสองร้านใน `shops.json`
 - [x] `gas/appsscript.json` ตั้ง `timeZone: "Asia/Bangkok"`, `runtimeVersion: "V8"`, `webapp: { executeAs: "USER_DEPLOYING", access: "ANYONE_ANONYMOUS" }`
 - [x] `worker/wrangler.jsonc` (env `npbeauty` / `lemonbeauty`), `worker/package.json` (มี wrangler เป็น devDependency)
 - [x] `.gitignore`: `node_modules`, `.wrangler`, `.dev.vars`, `.clasprc.json`, `gas/.clasp.json`

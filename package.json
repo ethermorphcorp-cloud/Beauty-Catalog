@@ -1,0 +1,8 @@
+{
+  "name": "beauty-catalog",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gas": "node scripts/gas.mjs"
+  }
+}

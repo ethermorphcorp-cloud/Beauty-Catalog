@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Shared settings. Always deploy with an environment:
+  //   npx wrangler deploy --env npbeauty | --env lemonbeauty
+  "name": "product-catalog",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-01",
+  "observability": { "enabled": true },
+  // Secret API_SECRET is set per environment (never commit):
+  //   npx wrangler secret put API_SECRET --env <shop>
+  "env": {
+    "npbeauty": {
+      // https://npbeauty.ethermorph-corp.workers.dev
+      "name": "npbeauty",
+      "vars": {
+        // GAS web app /exec URL of the NPBeauty sheet — filled in Phase 4
+        "GAS_URL": ""
+      },
+      // KV id — filled in Phase 5
+      "kv_namespaces": [{ "binding": "CATALOG", "id": "REPLACE_WITH_NPBEAUTY_KV_ID" }]
+    },
+    "lemonbeauty": {
+      // https://lemonbeauty.ethermorph-corp.workers.dev
+      "name": "lemonbeauty",
+      "vars": {
+        // GAS web app /exec URL of the LemonBeauty sheet — filled in Phase 4
+        "GAS_URL": ""
+      },
+      "kv_namespaces": [{ "binding": "CATALOG", "id": "REPLACE_WITH_LEMONBEAUTY_KV_ID" }]
+    }
+  }
+}
