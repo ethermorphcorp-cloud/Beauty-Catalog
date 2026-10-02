@@ -15,7 +15,7 @@
 
 ### 0.1 สมัคร Cloudflare
 - [x] สมัครบัญชี Cloudflare (Ethermorph.corp)
-- [ ] **Compute → Workers & Pages** → ตั้ง account subdomain เป็น `ethermorph-corp` → ลิงก์จะเป็น `npbeauty.ethermorph-corp.workers.dev` และ `lemonbeauty.ethermorph-corp.workers.dev`
+- [x] **Compute → Workers & Pages** → ตั้ง account subdomain เป็น `ethermorph-corp` → ลิงก์จะเป็น `npbeauty.ethermorph-corp.workers.dev` และ `lemonbeauty.ethermorph-corp.workers.dev`
 - [ ] ยังไม่ต้องสร้าง Worker (ทำใน Phase 6)
 
 ### 0.2 สร้าง repo ใน GitHub (repo เดียวใช้ทั้งสองร้าน)
@@ -27,7 +27,7 @@
 - [x] Node.js LTS (https://nodejs.org) — ตรวจด้วย `node -v`
 - [x] Git — ตรวจด้วย `git --version`
 - [x] Claude Code — ตามคู่มือที่ https://docs.claude.com
-- [x] clasp (เครื่องนี้มี 3.4.1 — ดู CLAUDE.md หัวข้อ 8)
+- [x] clasp `3.4.1` (ตรึงเวอร์ชันนี้ — ดู CLAUDE.md หัวข้อ 8)
 - [x] GitHub CLI: `gh auth login` (ethermorphcorp-cloud)
 - [x] repo ในเครื่อง: โฟลเดอร์ `VALIN Catalog` (`git init` แล้ว)
 
@@ -48,7 +48,7 @@
 
 ### 0.7 ล็อกอินเครื่องมือบนเครื่อง
 - [x] `clasp login` → เลือกบัญชี Google เดียวกับเจ้าของ Sheet → กดอนุญาต (จะได้ไฟล์ `~/.clasprc.json` — **ห้ามส่งไฟล์นี้ให้ใครหรือวางในแชท**)
-- [ ] `npx wrangler login` → กดอนุญาตในเบราว์เซอร์ (บัญชี Ethermorph.corp)
+- [x] `npx wrangler login` → กดอนุญาตในเบราว์เซอร์ (บัญชี Ethermorph.corp)
 
 ### 0.8 เตรียมข้อมูลร้าน ×2
 - [ ] NPBeauty: ชื่อร้าน, โลโก้ (PNG/JPG สี่เหลี่ยมจัตุรัส), LINE OA ID, สีหลัก
@@ -159,7 +159,7 @@
 
 > **สั่ง Claude Code:** `ทำ Phase 7`
 
-- [ ] **[Claude Code]** สร้าง `.github/workflows/deploy-gas.yml`: ทำงานเมื่อ push เข้า `main` ที่แก้ใน `gas/**` → ติดตั้ง clasp (เวอร์ชันเดียวกับเครื่อง) → เขียน secret `CLASPRC_JSON` ลง `~/.clasprc.json` → `npm run gas -- all push` → `npm run gas -- all deploy "${{ github.sha }}"` (`deploymentId` อ่านจาก `shops.json`)
+- [ ] **[Claude Code]** สร้าง `.github/workflows/deploy-gas.yml`: ทำงานเมื่อ push เข้า `main` ที่แก้ใน `gas/**` → ติดตั้ง `@google/clasp@3.4.1` → เขียน secret `CLASPRC_JSON` ลง `~/.clasprc.json` → `npm run gas -- all push` → `npm run gas -- all deploy "${{ github.sha }}"` (`deploymentId` อ่านจาก `shops.json`)
 - [ ] **[คุณ]** GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**
   - `CLASPRC_JSON` = เนื้อหาไฟล์ `~/.clasprc.json` บนเครื่องคุณ (เปิดไฟล์แล้วคัดลอกเอง — ไม่ต้องให้ Claude อ่าน)
 - [ ] **[Claude Code]** แก้ข้อความเล็กน้อยใน admin แล้ว push เพื่อทดสอบ

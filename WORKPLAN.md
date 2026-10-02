@@ -16,8 +16,8 @@
 | รายการ | สถานะ | หมายเหตุ |
 |---|---|---|
 | Node.js / Git | ✅ v20.20.0 / 2.53.0 | |
-| clasp + login | ✅ 3.4.1 | แผนเดิมตรึง 2.4.2 — รอยืนยันใช้ v3 |
-| wrangler | ⚠️ 4.86.0 ยังไม่ login | `npx wrangler login` |
+| clasp + login | ✅ 3.4.1 (ล่าสุด) | ตรึง 3.4.1 ทั้งในเครื่องและ CI |
+| wrangler | ✅ 4.86.0 | ethermorph.corp@gmail.com |
 | GitHub CLI | ✅ ethermorphcorp-cloud | git ใช้ credential จาก gh |
 | git repo | ✅ `git init` แล้ว | remote `origin` → ethermorphcorp-cloud/Beauty-Catalog |
 
@@ -25,13 +25,13 @@
 
 ### Phase 0 — เตรียมบัญชี [คุณ]
 - [x] 0.1 สมัคร Cloudflare (Ethermorph.corp)
-- [ ] 0.1 ตั้ง account subdomain `ethermorph-corp`
+- [x] 0.1 account subdomain `ethermorph-corp.workers.dev` (ตรวจผ่าน Cloudflare API แล้ว)
 - [x] 0.2 GitHub repo: https://github.com/ethermorphcorp-cloud/Beauty-Catalog
 - [x] 0.3 `gh auth login` (ethermorphcorp-cloud)
 - [x] 0.4 Sheet `NPBeauty Catalog DB` + `LemonBeauty Catalog DB`
 - [x] 0.5 Script ID ทั้งสองร้าน
 - [x] 0.6 เปิด Apps Script API
-- [ ] 0.7 `npx wrangler login`
+- [x] 0.7 `npx wrangler login`
 - [ ] 0.8 ข้อมูลร้าน ×2 (ชื่อ, โลโก้, LINE OA ID, สี)
 
 ### Phase 1 — โครง repo [Claude Code]
@@ -51,11 +51,8 @@
 
 ## ลำดับการทำงาน
 
-1. **ตอนนี้:** คุณทำ Phase 0 ให้ครบ — สำคัญสุดคือ Script ID ทั้งสองร้าน (0.4–0.6)
+1. **ตอนนี้:** Phase 0 เหลือแค่ 0.8 ข้อมูลร้าน (ใช้ใน Phase 6) → Claude Code เริ่ม Phase 2 ได้
 2. Claude Code ทำ Phase 1 → 2 → 3 ต่อเนื่อง ระหว่างนั้นคุณเตรียม 0.8
 3. Phase 4 ทำมือในเบราว์เซอร์ ร้านละรอบ
 4. Phase 5 → 9 ตามลำดับ
 
-## ต้องตัดสินใจ
-
-- **เวอร์ชัน clasp:** แนะนำใช้ 3.x ต่อ (ตรงกับ login ปัจจุบันและโปรเจกต์อื่น) และใช้เวอร์ชันเดียวกันใน GitHub Actions

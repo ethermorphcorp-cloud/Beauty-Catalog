@@ -228,7 +228,7 @@ cd worker && npx wrangler kv namespace create CATALOG --env <shop>
 cd worker && npx wrangler secret put API_SECRET --env <shop>
 ```
 
-clasp: เครื่องนี้ใช้ `3.4.1` และ `~/.clasprc.json` เป็นรูปแบบของ v3 (เดิมแผนตรึง `2.4.2` — รอผู้ใช้ยืนยัน) CI ต้องใช้ major version เดียวกับที่สร้าง `~/.clasprc.json` คำสั่ง `push -f` และ `deploy -i` ใช้ได้ทั้ง v2 และ v3
+clasp ใช้เวอร์ชัน `3.4.1` (ล่าสุด ณ 2026-10-02, ผู้ใช้ยืนยันแล้ว) ตรึงเวอร์ชันนี้ทั้งในเครื่องและ GitHub Actions เพราะรูปแบบ `~/.clasprc.json` ต้องตรงกับ major version (v2 ใช้กับ token ของ v3 ไม่ได้) ห้ามใช้ v2
 Worker deploy อัตโนมัติจาก Cloudflare Workers Builds เมื่อ push เข้า `main` (1 โปรเจกต์ต่อร้าน deploy command `npx wrangler deploy --env <shop>`) ส่วน GAS deploy ผ่าน GitHub Actions (matrix ทุกร้านใน `shops.json`)
 
 ## 9. วิธีทำงาน
