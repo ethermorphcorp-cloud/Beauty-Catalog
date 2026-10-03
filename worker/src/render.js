@@ -28,6 +28,21 @@ export function lineUrl(lineOaId, text) {
   return 'https://line.me/R/oaMessage/' + encodeURIComponent(lineOaId) + '/?' + encodeURIComponent(text || '');
 }
 
+/**
+ * The LINE button. Before the shop sets its LINE OA ID it is shown as a demo: same look, but a tap
+ * explains what it will do instead of opening LINE (so the page can be shown to the shop owner early).
+ */
+function lineButton(shop, text, cls, label, iconSize) {
+  const url = lineUrl(shop.lineOaId, text);
+  const inner = icon('chat', iconSize) + esc(label);
+  if (url) return '<a class="' + cls + '" href="' + esc(url) + '" rel="noopener">' + inner + '</a>';
+  const note = 'ตัวอย่างปุ่ม — เมื่อร้านตั้งค่า LINE OA แล้ว ปุ่มนี้จะเปิดแชท LINE ของร้าน' + (text ? ' พร้อมข้อความ “' + text + '”' : '');
+  return '<button type="button" class="' + cls + '" data-line-demo="' + esc(note) + '">' + inner + '</button>';
+}
+
+// Shows the demo note under a LINE button that has no LINE OA ID yet.
+const LINE_DEMO_JS = `document.addEventListener('click',function(e){var b=e.target.closest('[data-line-demo]');if(!b)return;var n=document.getElementById('line-demo');if(!n){n=document.createElement('p');n.id='line-demo';n.setAttribute('role','status');n.className='demo-note';b.insertAdjacentElement('afterend',n)}n.textContent=b.getAttribute('data-line-demo')});`;
+
 const CSS = `
 :root{--primary:#2563EB;--on-primary:#fff;--accent:#2563EB;--tint:#2563EB1F;--text:#18181B;--text-2:#3F3F46;--muted:#63636B;--border:#ECECEE;--photo:#F5F5F7}
 *{box-sizing:border-box}
@@ -60,6 +75,8 @@ h1{margin:0;font-size:22px;font-weight:600;line-height:1.45;overflow-wrap:anywhe
 .btn-line{height:52px;border-radius:12px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:600;text-decoration:none}
 .btn-outline{height:48px;padding:0 24px;border-radius:12px;border:1.5px solid var(--primary);color:var(--accent);display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:600;text-decoration:none}
 .hint{font-size:13px;color:var(--muted)}
+button.btn-line,button.btn-outline{font:inherit;font-weight:600;cursor:pointer;width:100%}button.btn-outline{width:auto;background:transparent}button.btn-line{border:0;font-size:16px}
+.demo-note{margin:8px 0 0;padding:8px 12px;border-radius:10px;background:var(--tint);color:var(--accent);font-size:13px;line-height:1.6;text-align:left}
 .cta .hint{display:none}
 .message{min-height:calc(100vh - 56px);padding:0 32px 80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
 .message .badge{width:72px;height:72px;border-radius:999px;background:var(--tint);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:4px}
@@ -119,7 +136,6 @@ export function shortDescription(text) {
 /** images: [{ name, src, srcset, thumb }] already signed by the caller. */
 export function productPage({ shop, product, images, url, ogImage }) {
   const text = 'สนใจสินค้า ' + product.code + ' ' + product.name;
-  const line = lineUrl(shop.lineOaId, text);
   const count = images.length;
   const slides = count
     ? images.map((img, i) =>
@@ -139,10 +155,8 @@ export function productPage({ shop, product, images, url, ogImage }) {
     (product.category ? '<span class="chip">' + esc(product.category) + '</span>' : '') +
     '<h1>' + esc(product.name) + '</h1><span class="code">รหัสสินค้า ' + esc(product.code) + '</span>' +
     (product.description ? '<div class="rule"></div><p class="desc">' + esc(product.description) + '</p>' : '') +
-    (line
-      ? '<div class="cta"><a class="btn-line" href="' + esc(line) + '" rel="noopener">' + icon('chat', 22) + 'ทัก LINE</a>' +
-        '<span class="hint">กดแล้วจะเปิดแชท LINE ของร้าน พร้อมข้อความ “' + esc(text) + '”</span></div>'
-      : '') +
+    '<div class="cta">' + lineButton(shop, text, 'btn-line', 'ทัก LINE', 22) +
+    '<span class="hint">กดแล้วจะเปิดแชท LINE ของร้าน พร้อมข้อความ “' + esc(text) + '”</span></div>' +
     '</div></main>';
   return layout({
     shop,
@@ -152,15 +166,14 @@ export function productPage({ shop, product, images, url, ogImage }) {
     image: ogImage,
     type: 'product',
     body,
-    script: count > 1 ? GALLERY_JS : '',
+    script: (count > 1 ? GALLERY_JS : '') + (shop.lineOaId ? '' : LINE_DEMO_JS),
   });
 }
 
 function messagePage({ shop, title, text, iconName, url, buttonText }) {
-  const line = lineUrl(shop.lineOaId, '');
   const body = '<main class="message"><div class="badge">' + icon(iconName, 32) + '</div><h1>' + esc(title) + '</h1><p>' + text + '</p>' +
-    (line ? '<a class="btn-outline" href="' + esc(line) + '" rel="noopener">' + icon('chat', 20) + esc(buttonText || 'ทัก LINE ร้าน') + '</a>' : '') + '</main>';
-  return layout({ shop, title: title + (shop.shopName ? ' | ' + shop.shopName : ''), canonical: url, noindex: true, body });
+    '<div>' + lineButton(shop, '', 'btn-outline', buttonText || 'ทัก LINE ร้าน', 20) + '</div></main>';
+  return layout({ shop, title: title + (shop.shopName ? ' | ' + shop.shopName : ''), canonical: url, noindex: true, body, script: shop.lineOaId ? '' : LINE_DEMO_JS });
 }
 
 export const hiddenPage = (shop, url) =>
@@ -173,8 +186,7 @@ export const errorPage = (shop, url) =>
   messagePage({ shop, url, iconName: 'search', title: 'ขออภัย ระบบขัดข้องชั่วคราว', text: 'กรุณาลองใหม่อีกครั้งในอีกสักครู่' });
 
 export function homePage(shop, url) {
-  const line = lineUrl(shop.lineOaId, '');
   const body = '<main class="message"><h1>' + esc(shop.shopName || 'ร้านค้า') + '</h1><p>ดูรายละเอียดสินค้าจากลิงก์ที่ร้านส่งให้<br>หรือทักร้านทาง LINE</p>' +
-    (line ? '<a class="btn-outline" href="' + esc(line) + '" rel="noopener">' + icon('chat', 20) + 'ทัก LINE ร้าน</a>' : '') + '</main>';
-  return layout({ shop, title: shop.shopName || 'ร้านค้า', canonical: url, body, image: shop.logoOg });
+    '<div>' + lineButton(shop, '', 'btn-outline', 'ทัก LINE ร้าน', 20) + '</div></main>';
+  return layout({ shop, title: shop.shopName || 'ร้านค้า', canonical: url, body, image: shop.logoOg, script: shop.lineOaId ? '' : LINE_DEMO_JS });
 }
