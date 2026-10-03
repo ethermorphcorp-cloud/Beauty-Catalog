@@ -59,7 +59,7 @@ Mockup: https://claude.ai/artifact/TBdXkpz28tFKTUS4h2E6iE — สีหลัก
 - [x] ตั้งค่าเริ่มต้น, ผู้ใช้ admin, New deployment (ครั้งเดียวต่อร้าน) — ทั้ง 2 ร้านเปิด /exec ได้ และ API ตอบ forbidden เมื่อ key ผิด (2026-10-03)
 
 ### Phase 5 — Worker [Claude Code]
-- [ ] KV ×2, router/render/gas/sign → commit `phase 5: worker`
+- [x] KV ×2, router/render/gas/sign, OG tags, 404/410, cache — ทดสอบกับ GAS จำลองผ่าน (GAS จริง/รูปจริงทดสอบใน Phase 6)
 
 ### Phase 6 — Cloudflare ↔ GitHub ×2 · Phase 7 — Auto deploy GAS · Phase 8 — ทดสอบ · Phase 9 — ส่งมอบ
 
