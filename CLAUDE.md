@@ -205,6 +205,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - ลิงก์รูปทุกอันต้องเซ็น HMAC-SHA256 ด้วย `API_SECRET` เพื่อไม่ให้ Worker กลายเป็น proxy เปิดสาธารณะ
 - สินค้า hidden → HTTP 410 + หน้า "สินค้านี้ไม่พร้อมจำหน่าย" / ไม่พบ → HTTP 404
 - ปุ่ม LINE: `https://line.me/R/oaMessage/{encodeURIComponent(lineOaId)}/?{encodeURIComponent(text)}` — ตรวจกับเอกสาร LINE URL scheme แล้ว (2026-10-03): ทั้ง LINE ID (`@` → `%40`) และข้อความต้อง percent-encode แบบ UTF-8
+- ถ้ายังไม่ได้ตั้ง LINE OA ID: ปุ่ม "ทัก LINE" ยังแสดง (โหมดตัวอย่าง ผู้ใช้ขอไว้เพื่อให้ลูกค้าดูหน้าตาได้ก่อน 2026-10-03) กดแล้วขึ้นข้อความอธิบายแทนการเปิด LINE; ตั้ง ID แล้วกลายเป็นลิงก์จริงอัตโนมัติ
 
 ### Worker env (`wrangler.jsonc`)
 หนึ่ง wrangler environment ต่อร้าน (`env.npbeauty`, `env.lemonbeauty`) แต่ละ env override `name` เป็นชื่อร้าน → Worker ชื่อ `npbeauty` / `lemonbeauty` ต้องใช้ `--env <shop>` ทุกครั้ง (ห้าม deploy แบบไม่ใส่ env)
