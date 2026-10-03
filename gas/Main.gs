@@ -36,10 +36,15 @@ function doGet(e) {
 function bootData_() {
   try {
     const s = readSettings_();
-    return { settings: { shopName: s.shopName, logoFileId: s.logoFileId, primaryColor: s.primaryColor } };
+    return { settings: { shopName: s.shopName, logoFileId: s.logoFileId, primaryColor: s.primaryColor }, version: buildVersion_() };
   } catch (err) {
-    return { settings: { shopName: '', logoFileId: '', primaryColor: '#2563EB' }, setupNeeded: true };
+    return { settings: { shopName: '', logoFileId: '', primaryColor: '#2563EB' }, setupNeeded: true, version: buildVersion_() };
   }
+}
+
+/** Commit id baked in by scripts/gas.mjs at push time (gas/ShopDefaults.gs). */
+function buildVersion_() {
+  return typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : 'dev';
 }
 
 /** Inlines another HTML file inside a template: <?!= include_('admin_css') ?> */

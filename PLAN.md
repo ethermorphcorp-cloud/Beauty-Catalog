@@ -176,10 +176,11 @@
 
 > **สั่ง Claude Code:** `ทำ Phase 7`
 
-- [ ] **[Claude Code]** สร้าง `.github/workflows/deploy-gas.yml`: ทำงานเมื่อ push เข้า `main` ที่แก้ใน `gas/**` → ติดตั้ง `@google/clasp@3.4.1` → เขียน secret `CLASPRC_JSON` ลง `~/.clasprc.json` → `npm run gas -- all push` → `npm run gas -- all deploy "${{ github.sha }}"` (`deploymentId` อ่านจาก `shops.json`)
+- [x] **[Claude Code]** สร้าง `.github/workflows/deploy-gas.yml`: ทดสอบ `npm run test:gas` ก่อน แล้ว ทำงานเมื่อ push เข้า `main` ที่แก้ใน `gas/**` → ติดตั้ง `@google/clasp@3.4.1` → เขียน secret `CLASPRC_JSON` ลง `~/.clasprc.json` → `npm run gas -- all push` → `npm run gas -- all deploy "${{ github.sha }}"` (`deploymentId` อ่านจาก `shops.json`)
 - [ ] **[คุณ]** GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**
-  - `CLASPRC_JSON` = เนื้อหาไฟล์ `~/.clasprc.json` บนเครื่องคุณ (เปิดไฟล์แล้วคัดลอกเอง — ไม่ต้องให้ Claude อ่าน)
-- [ ] **[Claude Code]** แก้ข้อความเล็กน้อยใน admin แล้ว push เพื่อทดสอบ
+  - `CLASPRC_JSON` = เนื้อหาไฟล์ `~/.clasprc.json` บนเครื่องคุณ (รันคำสั่ง `gh secret set` เอง หรือคัดลอกเอง — ไม่ต้องให้ Claude อ่าน)
+  - ไม่ต้องตั้ง `GAS_DEPLOYMENT_ID` แล้ว (อ่านจาก `shops.json`)
+- [ ] **[Claude Code]** push แล้วดูว่า Action ผ่าน และหน้า admin › ตั้งค่า แสดง "เวอร์ชันระบบ <commit>" ตรงกับ commit ล่าสุด
 
 **เสร็จเมื่อ:** Action เป็นสีเขียว และ Web app URL เดิมของทั้งสองร้านแสดงข้อความที่แก้แล้ว (URL ไม่เปลี่ยน)
 

@@ -948,7 +948,8 @@
     if (state.settingsTab === 'categories') body = categoriesHtml();
     else if (state.settingsTab === 'users') body = usersHtml();
     else body = shopHtml();
-    return '<div class="page narrow"><h1 class="page-title">ตั้งค่า</h1>' + tabs + '<div role="tabpanel">' + body + '</div></div>';
+    return '<div class="page narrow"><h1 class="page-title">ตั้งค่า</h1>' + tabs + '<div role="tabpanel">' + body + '</div>' +
+      '<p class="hint center">เวอร์ชันระบบ ' + esc(BOOT.version || 'dev') + '</p></div>';
   }
 
   function shopHtml() {

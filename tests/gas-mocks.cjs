@@ -131,7 +131,8 @@ function loadGas(gasDir) {
   const context = vm.createContext({
     console, SpreadsheetApp, DriveApp, PropertiesService, CacheService, LockService, Utilities, Session, UrlFetchApp, ContentService, HtmlService,
   });
-  const files = fs.readdirSync(gasDir).filter((f) => f.endsWith('.gs')).sort();
+  // ShopDefaults.gs is generated per shop at push time; tests set SHOP_DEFAULTS themselves.
+  const files = fs.readdirSync(gasDir).filter((f) => f.endsWith('.gs') && f !== 'ShopDefaults.gs').sort();
   // Concatenate so top-level const bindings are shared across files, as in Apps Script.
   vm.runInContext(files.map((f) => fs.readFileSync(path.join(gasDir, f), 'utf8')).join('\n;\n'), context, { filename: 'gas-bundle.js' });
   return { context, run: (code) => vm.runInContext(code, context) };

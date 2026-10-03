@@ -85,7 +85,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
   admin-preview.cjs         เปิดหน้า admin จริงที่ http://localhost:8787 ต่อกับ backend บน mock: `npm run preview:admin` (owner / owner-password, staff1 / staff-password)
 /gas/
   .clasp.json               สร้างอัตโนมัติโดย scripts/gas.mjs (gitignore) ห้ามแก้เอง
-  ShopDefaults.gs           สร้างอัตโนมัติตอน push จาก shops.json → defaults ของร้านนั้น (gitignore) ห้ามแก้เอง
+  ShopDefaults.gs           สร้างอัตโนมัติตอน push: SHOP_DEFAULTS (shops.json → defaults) + BUILD_VERSION (commit) (gitignore) ห้ามแก้เอง
   appsscript.json
   Main.gs                   doGet routing
   Setup.gs                  setup(), onOpen() เมนูใน Sheet
@@ -111,7 +111,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 /docs/
   csv-template.csv
 /.github/workflows/
-  deploy-gas.yml
+  deploy-gas.yml            push เข้า main ที่แก้ gas/** ฯลฯ → test:gas → clasp push + deploy -i ทุกร้าน (secret CLASPRC_JSON)
 ```
 
 ---
