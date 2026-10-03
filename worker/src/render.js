@@ -125,7 +125,7 @@ function layout({ shop, title, description, canonical, image, type, noindex, bod
     '<meta name="theme-color" content="' + t.primary + '">' +
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
     // Load the web font without blocking first paint (system font shows first, then swaps).
-    '<link rel="preload" as="style" href="' + FONT_CSS + '" onload="this.onload=null;this.rel='stylesheet'">' +
+    '<link rel="preload" as="style" href="' + FONT_CSS + '" onload="this.onload=null;this.rel=\'stylesheet\'">' +
     '<noscript><link rel="stylesheet" href="' + FONT_CSS + '"></noscript>' +
     (preloadImage ? '<link rel="preload" as="image" href="' + esc(preloadImage.src) + '" imagesrcset="' + esc(preloadImage.srcset) + '" imagesizes="(min-width:1024px) 560px, 100vw" fetchpriority="high">' : '') +
     '<link rel="icon" href="' + (shop.logoSrc ? esc(shop.logoSrc) : 'data:,') + '">' +

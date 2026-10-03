@@ -27,6 +27,9 @@ export default {
       }
       if (request.method !== 'GET' && request.method !== 'HEAD') return plain('Method Not Allowed', 405);
 
+      // Pages declare their own icon (shop logo); answer the browser's default request without a 404.
+      if (url.pathname === '/favicon.ico') return new Response(null, { status: 204, headers: { 'Cache-Control': 'public, max-age=86400' } });
+
       const img = url.pathname.match(/^\/img\/([^/]+)$/);
       if (img) return await handleImage(env, safeDecode(img[1]), url);
 
