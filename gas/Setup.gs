@@ -8,6 +8,8 @@ function onOpen() {
     .addItem('สร้าง/รีเซ็ตผู้ใช้ admin', 'menuUpsertAdmin')
     .addItem('แสดง API_SECRET', 'menuShowApiSecret')
     .addSeparator()
+    .addItem('เพิ่มข้อมูลตัวอย่าง', 'menuSeedDemo')
+    .addItem('ลบข้อมูลตัวอย่าง', 'menuRemoveDemo')
     .addItem('ทดสอบระบบ', 'menuSelfTest')
     .addToUi();
 }

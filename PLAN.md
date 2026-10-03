@@ -125,6 +125,8 @@
 - [ ] **[คุณ]** รีเฟรช Sheet → เมนู **Catalog → ตั้งค่าเริ่มต้น** → กดอนุญาตสิทธิ์ (Sheets, Drive, ส่ง request ภายนอก)
   - ถ้าเจอหน้า "Google hasn't verified this app" ให้กด Advanced → Go to ... (unsafe) ซึ่งปกติสำหรับสคริปต์ของตัวเอง
 - [ ] **[คุณ]** **Catalog → สร้าง/รีเซ็ตผู้ใช้ admin** (ผู้ใช้ admin คนแรก)
+- [ ] **[คุณ]** **Catalog → ทดสอบระบบ** → ทุกบรรทัด PASS
+- [ ] **[คุณ]** (ไม่บังคับ) **Catalog → เพิ่มข้อมูลตัวอย่าง** → สินค้า DEMO-001…DEMO-012 สำหรับลองระบบ ลบทีหลังด้วย **Catalog → ลบข้อมูลตัวอย่าง**
 - [ ] **[คุณ]** ใน Apps Script editor: **Deploy → New deployment** → ชนิด **Web app** → Execute as **Me** → Who has access **Anyone** → Deploy
 - [ ] **[คุณ]** จด **Deployment ID** และ **Web app URL** (`.../exec`)
   - ⚠️ นี่เป็นครั้งเดียวที่กด New deployment ต่อจากนี้ห้ามกดอีก

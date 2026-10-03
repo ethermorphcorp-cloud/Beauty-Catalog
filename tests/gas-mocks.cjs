@@ -78,6 +78,7 @@ function makeFolder(name, parentId) {
     createFolder: (n) => makeFolder(n, id),
     createFile: (blob) => makeFile(blob.getName(), blob.getContentType(), id),
     getFiles: () => iter(Object.values(driveItems).filter((x) => x.kind === 'file' && x.parentId === id)),
+    getParents: () => iter(parentId ? [driveItems[parentId]] : []),
   };
   driveItems[id] = f;
   return f;

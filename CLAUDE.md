@@ -90,6 +90,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
   Setup.gs                  setup(), onOpen() เมนูใน Sheet
   Auth.gs                   login, session, hash, ผู้ใช้และสิทธิ์ (admin/staff)
   Audit.gs                  เขียนแท็บ AuditLog
+  Seed.gs                   ข้อมูลตัวอย่าง 12 สินค้า (รหัส DEMO-xxx, 5 หมวด, ไม่มีรูป) เพิ่ม/ลบผ่านเมนู Catalog
   SelfTest.gs               _selfTest() ทดสอบ backend บน Sheet จริง (เมนู Catalog → ทดสอบระบบ) แล้วลบข้อมูลทดสอบทิ้ง
   Products.gs               CRUD, ค้นหา, import CSV
   Drive.gs                  โฟลเดอร์, อัปโหลด, ตั้งค่าแชร์, list รูป
@@ -139,7 +140,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 **แท็บ `Settings`**: คอลัมน์ `key | value` โดยมี key คือ `shopName`, `logoFileId`, `lineOaId`, `primaryColor`, `workerUrl`
 
 **แท็บ `AuditLog`** (append อย่างเดียว): `timestamp | user | action | productId | code | field | before | after`
-- action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`
+- action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`, `removeDemo`
 - `updateProduct` / `saveSettings` บันทึก 1 แถวต่อฟิลด์ที่ค่าเปลี่ยนจริง; ค่า before/after ยาวเกิน 500 ตัวอักษรให้ตัด
 
 **Script Properties** (ห้ามเก็บใน Sheet)
@@ -148,6 +149,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 |---|---|
 | `USERS` | JSON array `[{ username, displayName, role: "admin"\|"staff", salt, hash, passwordChangedAt, createdAt, lastLoginAt }]` — session ที่ออกก่อน `passwordChangedAt` ใช้ไม่ได้ (ตั้งรหัสใหม่แล้วหลุดทุกเครื่อง), `hash` = SHA-256 hex ของ `salt + password`, `username` ตรง `^[a-z0-9_.-]{3,30}$`, รหัสผ่านอย่างน้อย 8 ตัว |
 | `API_SECRET` | random 32+ ตัวอักษร ใช้ค่าเดียวกับ Worker |
+| `LAST_PRODUCT_SEQ` | เลข productId ล่าสุดที่เคยออก — productId ไม่ถูกนำกลับมาใช้ซ้ำแม้ลบแถว |
 | `ROOT_FOLDER_ID` | โฟลเดอร์หลักใน Drive ของร้าน (ร้านละโฟลเดอร์ ระบุไว้แล้วใน `shops.json` → `rootFolderId`) `setup()` ถามลิงก์โฟลเดอร์ผ่าน prompt ถ้ายังไม่ได้ตั้ง (เว้นว่าง = สร้างใหม่) และตรวจว่าเปิดได้ |
 
 ---

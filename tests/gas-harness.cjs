@@ -1,7 +1,7 @@
 // gas-harness.cjs — runs _selfTest() and extra backend checks under Node mocks.
 // Usage: npm run test:gas   (no Google account needed; real-Sheet test = menu Catalog → ทดสอบระบบ)
 const path = require('path');
-const { loadGas, spreadsheet, store, syncCalls } = require('./gas-mocks.cjs');
+const { loadGas, spreadsheet, store, syncCalls, driveItems } = require('./gas-mocks.cjs');
 
 const gasDir = process.argv[2] || path.join(__dirname, '..', 'gas');
 const { run } = loadGas(gasDir);
@@ -41,3 +41,16 @@ const audit = spreadsheet.getSheetByName('AuditLog').data;
 console.log('audit rows:', audit.length - 1, '| actions:', [...new Set(audit.slice(1).map((r) => r[2]))].join(','));
 console.log('selftest users left:', JSON.parse(store.USERS).map((u) => u.username).join(','));
 console.log('sync calls:', syncCalls.length, 'last:', JSON.stringify(syncCalls[syncCalls.length - 1].body).slice(0, 160));
+
+// Demo seed data: add, re-add (idempotent), remove; product IDs are never reused.
+const seeded = run(`seedDemo_('test')`);
+const again = run(`seedDemo_('test')`);
+const maxIdBefore = run(`readProducts_().records.map((r) => r.productId).sort().pop()`);
+const removed = run(`removeDemo_('test')`);
+const demoLeft = run(`readProducts_().records.filter((r) => r.code.indexOf('DEMO-') === 0).length`);
+const demoCatsLeft = run(`readCategories_().records.filter((c) => ['กันแดด', 'ดูแลเส้นผม'].indexOf(c.name) >= 0).length`);
+const after = run(`createProduct('${tok}', { code: 'AFTER-DEMO', name: 'หลังลบตัวอย่าง', category: '' })`).data.product.productId;
+const trashedDemo = Object.values(driveItems).filter((f) => f.kind === 'folder' && /^P0000(0[4-9]|1[0-5])$/.test(f.name) && f.trashed).length;
+const seedOk = trashedDemo === 12 && seeded.added === 12 && again.added === 0 && again.skipped === 12 && removed.removed === 12 && demoLeft === 0 && demoCatsLeft === 0 && after > maxIdBefore;
+console.log((seedOk ? 'PASS' : 'FAIL') + ' demo seed add/re-add/remove, ids not reused', JSON.stringify({ trashedDemo, seeded, again, removed, demoLeft, demoCatsLeft, maxIdBefore, after }));
+if (!seedOk) process.exitCode = 1;

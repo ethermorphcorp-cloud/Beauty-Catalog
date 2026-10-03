@@ -15,21 +15,7 @@ run('setup()');
 run(`upsertAdmin_('owner', 'owner-password', 'preview')`);
 run(`withLock_(() => { const u = readUsers_(); u.push(newUser_('staff1', 'คุณแพร', 'staff', 'staff-password')); writeUsers_(u); })`);
 run(`withLock_(() => writeSettings_({ shopName: 'NPBeauty', lineOaId: '@npbeauty', primaryColor: '#1F5FAE', workerUrl: 'https://npbeauty.ethermorph-corp.workers.dev' }))`);
-const owner = run(`login('owner', 'owner-password')`).data.token;
-const seed = [
-  ['NP-001', 'เซรั่มวิตามินซี 30 ml', 'สกินแคร์', 'เซรั่มวิตามินซีเข้มข้น ช่วยให้ผิวดูกระจ่างใส\nเนื้อบางเบา ซึมไว\n\nขนาด 30 ml'],
-  ['NP-002', 'ครีมกันแดด SPF50 PA++++ 40 g', 'ครีมกันแดด', 'กันแดดเนื้อบางเบา'],
-  ['NP-003', 'ลิปทินท์ เนื้อแมตต์ สี Rose', 'เมคอัพ', ''],
-  ['NP-004', 'โฟมล้างหน้า สูตรอ่อนโยน 100 ml', 'สกินแคร์', ''],
-  ['NP-005', 'มาส์กหน้า ไฮยาลูรอน 5 ชิ้น', 'สกินแคร์', ''],
-];
-seed.forEach(([code, name, category, description]) => {
-  context.__seed = { code, name, category, description };
-  run(`createProduct('${owner}', __seed)`);
-});
-const np3 = run(`readProducts_().records.find((r) => r.code === 'NP-003').productId`);
-run(`setStatus('${owner}', '${np3}', 'hidden')`);
-run(`withLock_(() => ensureCategory_('ของแถม'))`);
+run(`seedDemo_('preview')`); // same demo data as the Sheet menu Catalog → เพิ่มข้อมูลตัวอย่าง
 
 // ---------- page ----------
 const shim = `<script>

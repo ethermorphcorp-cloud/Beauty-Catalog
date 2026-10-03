@@ -35,12 +35,18 @@ function splitCodes_(value) {
     .filter(Boolean);
 }
 
+/**
+ * Allocates the next productId. IDs are never reused, even after rows are deleted
+ * (the high-water mark is kept in Script Properties as LAST_PRODUCT_SEQ). Call inside withLock_.
+ */
 function nextProductId_(table) {
-  const max = table.records.reduce((m, r) => {
+  const maxInSheet = table.records.reduce((m, r) => {
     const n = Number(String(r.productId).replace(/^P/, ''));
     return isFinite(n) && n > m ? n : m;
   }, 0);
-  return 'P' + String(max + 1).padStart(6, '0');
+  const next = Math.max(maxInSheet, Number(props_().getProperty('LAST_PRODUCT_SEQ') || 0)) + 1;
+  props_().setProperty('LAST_PRODUCT_SEQ', String(next));
+  return 'P' + String(next).padStart(6, '0');
 }
 
 /** A current code always wins over a redirect: drop `code` from other products' oldCodes. */
@@ -277,7 +283,6 @@ function importCsv(token, rows) {
       const skipped = [];
       const warnings = [];
       const recs = [];
-      let next = Number(nextProductId_(table).slice(1));
       const now = nowIso_();
 
       rows.forEach((row, i) => {
@@ -294,7 +299,7 @@ function importCsv(token, rows) {
           skipped.push({ code, message: err.message });
           return;
         }
-        const productId = 'P' + String(next++).padStart(6, '0');
+        const productId = nextProductId_(table);
         const folderUrl = String(row.folder_url || '').trim();
         let folder;
         try {
@@ -302,7 +307,6 @@ function importCsv(token, rows) {
         } catch (err) {
           if (!err.userFacing) throw err;
           skipped.push({ code, message: err.message });
-          next--;
           return;
         }
         if (folder.warning) warnings.push(code + ': ' + folder.warning);
