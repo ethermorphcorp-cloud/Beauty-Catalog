@@ -159,7 +159,7 @@
 
 - [x] **[Claude Code]** push โค้ดทั้งหมดขึ้น `main`
 - [x] **[Claude Code]** deploy ครั้งแรกด้วย `npx wrangler deploy --env <shop>` ทั้ง 2 ร้าน (2026-10-03)
-- [ ] **[คุณ]** Worker สร้างไว้แล้ว → Cloudflare dashboard → **Workers & Pages → (ชื่อร้าน) → Settings → Builds → Connect** → เชื่อม GitHub → เลือก repo
+- [x] **[คุณ]** Worker สร้างไว้แล้ว → Cloudflare dashboard → **Workers & Pages → (ชื่อร้าน) → Settings → Builds → Connect** → เชื่อม GitHub → เลือก repo `Beauty-Catalog` (GitHub app ต้องได้สิทธิ์ repo นี้ที่ github.com/settings/installations)
   - Project name: `npbeauty` / `lemonbeauty` (ต้องตรงกับ `name` ใน env ของ `wrangler.jsonc`)
   - Root directory: `worker`
   - Deploy command: `npx wrangler deploy --env npbeauty` / `npx wrangler deploy --env lemonbeauty`
