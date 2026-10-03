@@ -4,8 +4,11 @@
   //   npx wrangler deploy --env npbeauty | --env lemonbeauty
   "name": "product-catalog",
   "main": "src/index.js",
-  "compatibility_date": "2026-08-01",
+  "compatibility_date": "2026-05-01",
   "observability": { "enabled": true },
+  // Workers Caching: Cloudflare serves cached responses per their Cache-Control
+  // (product pages 60 s, signed images 30 days) without running the Worker.
+  "cache": { "enabled": true },
   // Secret API_SECRET is set per environment (never commit):
   //   npx wrangler secret put API_SECRET --env <shop>
   "env": {
@@ -16,8 +19,7 @@
         // GAS web app /exec URL of the NPBeauty sheet
         "GAS_URL": "https://script.google.com/macros/s/AKfycbyfMCb5m-TTBWT2NykhvyjvhGOktfumfKx6M_2sDLb25ATRDR4AHX-9EvyFZgsFJPl1-A/exec"
       },
-      // KV id — filled in Phase 5
-      "kv_namespaces": [{ "binding": "CATALOG", "id": "REPLACE_WITH_NPBEAUTY_KV_ID" }]
+      "kv_namespaces": [{ "binding": "CATALOG", "id": "ce19a06132a144a0bf511462507ff0aa" }]
     },
     "lemonbeauty": {
       // https://lemonbeauty.ethermorph-corp.workers.dev
@@ -26,7 +28,7 @@
         // GAS web app /exec URL of the LemonBeauty sheet
         "GAS_URL": "https://script.google.com/macros/s/AKfycbzGSVAOM_Kd6ueNRJE3yVdnK6ZHqLo7tgOA05WXxm6W3oQ253bn4kDtiJSAVOeQ1E8e/exec"
       },
-      "kv_namespaces": [{ "binding": "CATALOG", "id": "REPLACE_WITH_LEMONBEAUTY_KV_ID" }]
+      "kv_namespaces": [{ "binding": "CATALOG", "id": "c1536310997045299f83920ce21f0162" }]
     }
   }
 }

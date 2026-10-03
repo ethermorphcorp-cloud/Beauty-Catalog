@@ -7,7 +7,8 @@
     "dev:npbeauty": "wrangler dev --env npbeauty",
     "dev:lemonbeauty": "wrangler dev --env lemonbeauty",
     "deploy:npbeauty": "wrangler deploy --env npbeauty",
-    "deploy:lemonbeauty": "wrangler deploy --env lemonbeauty"
+    "deploy:lemonbeauty": "wrangler deploy --env lemonbeauty",
+    "dev:preview": "wrangler dev --env npbeauty --port 8788 --var GAS_URL:http://localhost:8787/exec --var API_SECRET:preview-secret"
   },
   "devDependencies": {
     "wrangler": "^4.86.0"

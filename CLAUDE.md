@@ -204,13 +204,17 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - หน้าสินค้าต้องมี `og:title`, `og:description` (ตัด 150 ตัวอักษร), `og:image` (URL เต็มของ `/img/...` ขนาด 1200), `og:url`, `og:type=product`
 - ลิงก์รูปทุกอันต้องเซ็น HMAC-SHA256 ด้วย `API_SECRET` เพื่อไม่ให้ Worker กลายเป็น proxy เปิดสาธารณะ
 - สินค้า hidden → HTTP 410 + หน้า "สินค้านี้ไม่พร้อมจำหน่าย" / ไม่พบ → HTTP 404
-- ปุ่ม LINE: `https://line.me/R/oaMessage/{lineOaId}/?{encodeURIComponent(text)}` — **ตรวจรูปแบบ URL กับเอกสาร LINE ก่อนใช้จริง**
+- ปุ่ม LINE: `https://line.me/R/oaMessage/{encodeURIComponent(lineOaId)}/?{encodeURIComponent(text)}` — ตรวจกับเอกสาร LINE URL scheme แล้ว (2026-10-03): ทั้ง LINE ID (`@` → `%40`) และข้อความต้อง percent-encode แบบ UTF-8
 
 ### Worker env (`wrangler.jsonc`)
 หนึ่ง wrangler environment ต่อร้าน (`env.npbeauty`, `env.lemonbeauty`) แต่ละ env override `name` เป็นชื่อร้าน → Worker ชื่อ `npbeauty` / `lemonbeauty` ต้องใช้ `--env <shop>` ทุกครั้ง (ห้าม deploy แบบไม่ใส่ env)
 - `vars.GAS_URL` — URL `/exec` ของ GAS ของร้านนั้น (ไม่ใช่ความลับ, commit ได้)
 - secret `API_SECRET` — ตั้งผ่าน `npx wrangler secret put API_SECRET --env <shop>` หรือ dashboard (ห้าม commit) ค่าต้องตรงกับ Script Properties ของ GAS ร้านเดียวกัน
-- KV binding `CATALOG` — KV namespace แยกต่อร้าน
+- KV binding `CATALOG` — KV namespace แยกต่อร้าน (`catalog-npbeauty` = `ce19a061…`, `catalog-lemonbeauty` = `c1536310…`) ทุก key ตั้ง `expirationTtl` 3 วัน ถ้า sync พลาด ข้อมูลจะดึงใหม่จาก GAS เองภายใน 3 วัน
+- **Workers Caching** (`"cache": { "enabled": true }`) แคชตาม `Cache-Control`: หน้าสินค้า/404/410 = 60 วินาที, `/img` = 30 วัน, redirect 301 = 1 ชม., 503 และ `/__sync` = no-store (Cache API `caches.default` ใช้บน workers.dev ไม่ได้ จึงไม่ใช้)
+- ทดสอบในเครื่องโดยไม่ใช้ secret จริง: `npm run preview:admin` (GAS จำลองที่ :8787 มี `/exec?api=…`, secret = `preview-secret`) แล้ว `cd worker && npm run dev:preview` (:8788)
+- ทดสอบกับ GAS จริง: ใส่ `API_SECRET=...` ใน `worker/.dev.vars.npbeauty` หรือ `.dev.vars.lemonbeauty` (gitignore แล้ว) แล้ว `npx wrangler dev --env <shop>`
+- wrangler ตรึง `4.86.x` เพราะเครื่องนี้ใช้ Node 20 (wrangler ใหม่ต้อง Node 22) และ `compatibility_date` = `2026-05-01` ซึ่ง runtime ของ 4.86 รองรับ
 
 ---
 
@@ -259,7 +263,8 @@ npm run gas -- <shop> deploy "msg"                        # clasp deploy -i <dep
 npm run gas -- <shop> open                                # เปิด editor
 
 # Worker (<shop> = npbeauty | lemonbeauty)
-cd worker && npx wrangler dev --env <shop>                # รันทดสอบ (ใส่ API_SECRET ใน worker/.dev.vars)
+cd worker && npx wrangler dev --env <shop>                # รันทดสอบกับ GAS จริง (ใส่ API_SECRET ใน worker/.dev.vars.<shop>)
+cd worker && npm run dev:preview                          # รันทดสอบกับ GAS จำลอง (ต้องเปิด npm run preview:admin ก่อน)
 cd worker && npx wrangler kv namespace create CATALOG --env <shop>
 cd worker && npx wrangler secret put API_SECRET --env <shop>
 ```

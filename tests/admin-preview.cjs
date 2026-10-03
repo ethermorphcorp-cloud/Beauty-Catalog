@@ -12,6 +12,7 @@ const { context, run } = loadGas(gasDir);
 
 // ---------- seed data ----------
 run('setup()');
+run(`props_().setProperty('API_SECRET', 'preview-secret')`); // fixed so a local Worker can call /exec?api=…
 run(`upsertAdmin_('owner', 'owner-password', 'preview')`);
 run(`withLock_(() => { const u = readUsers_(); u.push(newUser_('staff1', 'คุณแพร', 'staff', 'staff-password')); writeUsers_(u); })`);
 run(`withLock_(() => writeSettings_({ shopName: 'NPBeauty', lineOaId: '@npbeauty', primaryColor: '#1F5FAE', workerUrl: 'https://npbeauty.ethermorph-corp.workers.dev' }))`);
@@ -75,6 +76,14 @@ http
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(out));
       });
+      return;
+    }
+    if (req.url.indexOf('/exec?') === 0) {
+      // The Worker's view of GAS: GET /exec?api=product|settings&key=…
+      const params = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams);
+      context.__params = params;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(run('handleApi_(__params)').text);
       return;
     }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });

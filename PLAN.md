@@ -140,12 +140,15 @@
 
 > **สั่ง Claude Code:** `ทำ Phase 5`
 
-- [ ] **[Claude Code]** รัน `npx wrangler kv namespace create CATALOG --env <shop>` ทั้งสองร้าน แล้วใส่ id ใน env ของแต่ละร้านใน `wrangler.jsonc`
-- [ ] router, render, gas, sign ตาม CLAUDE.md หัวข้อ 5
-- [ ] หน้าสินค้า: OG tags ครบ, แกลเลอรีปัดได้, ปุ่ม LINE sticky บนมือถือ, Noto Sans Thai, สีหลักจาก settings
-- [ ] หน้า 404 / 410 สวยงามและมีชื่อร้าน
-- [ ] `Cache-Control` ที่เหมาะสม: HTML สั้น (เช่น 60 วินาที), รูป 30 วัน
-- [ ] ทดสอบด้วย `npx wrangler dev --env <shop>` (ใส่ `API_SECRET` ใน `worker/.dev.vars`)
+- [x] **[Claude Code]** รัน `npx wrangler kv namespace create CATALOG --env <shop>` ทั้งสองร้าน แล้วใส่ id ใน env ของแต่ละร้านใน `wrangler.jsonc`
+- [x] router, render, gas, sign ตาม CLAUDE.md หัวข้อ 5
+- [x] หน้าสินค้า: OG tags ครบ, แกลเลอรีปัดได้, ปุ่ม LINE sticky บนมือถือ, Noto Sans Thai, สีหลักจาก settings
+- [x] หน้า 404 / 410 สวยงามและมีชื่อร้าน
+- [x] `Cache-Control` ที่เหมาะสม: HTML สั้น (เช่น 60 วินาที), รูป 30 วัน
+- [x] ทดสอบด้วย `npx wrangler dev --env <shop>` (ใส่ `API_SECRET` ใน `worker/.dev.vars`)
+
+- [x] ทดสอบด้วย GAS จำลอง (2026-10-03): 200 หน้าสินค้า (รหัสพิมพ์เล็กได้), 410 สินค้าซ่อน, 404 ไม่พบ/รหัสผิดรูป, 301 รหัสเก่า, 403 `/img` ลายเซ็นผิดหรือคนละขนาด, 401 `/__sync` ไม่มี/ผิด secret, sync สินค้า+redirect+ซ่อน, OG tags, layout 375/1280 ไม่มี scroll แนวนอน
+- [ ] ทดสอบกับ GAS จริงและรูปจริงจาก Drive ← หลังตั้ง `API_SECRET` ใน Phase 6
 
 **เสร็จเมื่อ:** `wrangler dev` แสดงหน้าสินค้าทดสอบจาก Phase 4 ได้ถูกต้อง, `/img` ที่ลายเซ็นผิดได้ 403, `/__sync` ที่ไม่มี secret ได้ 401, commit `phase 5: worker`
 
