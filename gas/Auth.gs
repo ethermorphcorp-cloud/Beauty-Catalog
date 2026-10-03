@@ -137,6 +137,7 @@ function login(username, password) {
         writeUsers_(users);
       }
       audit_(name, 'login', {});
+      applyShopDefaults_();
     });
     return { token, user: publicUser_(user) };
   });

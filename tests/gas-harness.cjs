@@ -63,3 +63,14 @@ const usersOk = usersTab.data[0].join(',') === 'username,displayName,role,create
   !JSON.stringify(usersTab.data).match(/salt|hash/) && usersTab.protections && usersTab.protections[0].warningOnly === true;
 console.log((usersOk ? 'PASS' : 'FAIL') + ' Users tab mirrors accounts without secrets', JSON.stringify(userRows));
 if (!usersOk) process.exitCode = 1;
+
+// Per-shop defaults: fill empty Settings keys only, never overwrite saved values.
+run(`var SHOP_DEFAULTS = { primaryColor: '#8E4AA8', workerUrl: 'https://lemon.example.workers.dev' }`);
+const filled = run(`withLock_(() => applyShopDefaults_())`);
+const afterDefaults = run('readSettings_()');
+const defaultsOk = filled === 0 && afterDefaults.primaryColor === '#1F5FAE'; // saved earlier in this test → kept
+run(`withLock_(() => { const t = readTable_(SHEET.settings); t.records.filter((r) => r.key === 'primaryColor').forEach((r) => { r.value = ''; writeRecord_(t, r); }); })`);
+const filled2 = run(`withLock_(() => applyShopDefaults_())`);
+const defaultsOk2 = filled2 === 1 && run('readSettings_()').primaryColor === '#8E4AA8';
+console.log((defaultsOk && defaultsOk2 ? 'PASS' : 'FAIL') + ' shop defaults fill empty settings only', JSON.stringify({ filled, filled2 }));
+if (!(defaultsOk && defaultsOk2)) process.exitCode = 1;

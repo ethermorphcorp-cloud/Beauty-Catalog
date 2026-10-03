@@ -4,13 +4,21 @@
     "scriptId": "10kH9xDUsuHW1IvY7OTqU2qIbRnVKAsHcrXveF440GRSAnqgV0fu_ERkt",
     "deploymentId": "AKfycbyfMCb5m-TTBWT2NykhvyjvhGOktfumfKx6M_2sDLb25ATRDR4AHX-9EvyFZgsFJPl1-A",
     "rootFolderId": "1Zwug4PAAD4oaN5F1lKuM6L8MGrHCd80B",
-    "workerEnv": "npbeauty"
+    "workerEnv": "npbeauty",
+    "defaults": {
+      "primaryColor": "#1F5FAE",
+      "workerUrl": "https://npbeauty.ethermorph-corp.workers.dev"
+    }
   },
   "lemonbeauty": {
     "displayName": "LemonBeauty",
     "scriptId": "16CtkagFc6n8lbdFtYRdto7P1Kiw5Vg23UoprFMCaBRdbIpFwoD9mkC27",
     "deploymentId": "AKfycbzGSVAOM_Kd6ueNRJE3yVdnK6ZHqLo7tgOA05WXxm6W3oQ253bn4kDtiJSAVOeQ1E8e",
     "rootFolderId": "1c9YSaJZ8l4nsgskh9tXRxzIPOzLmGATU",
-    "workerEnv": "lemonbeauty"
+    "workerEnv": "lemonbeauty",
+    "defaults": {
+      "primaryColor": "#8E4AA8",
+      "workerUrl": "https://lemonbeauty.ethermorph-corp.workers.dev"
+    }
   }
 }

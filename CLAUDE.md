@@ -76,7 +76,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 /WORKPLAN.md                checklist / สถานะงานปัจจุบัน
 /.gitignore
 /package.json               npm run gas -- <shop|all> <push|deploy|open>
-/shops.json                 รายชื่อร้าน: scriptId, deploymentId, rootFolderId, workerEnv (ไม่ใช่ความลับ)
+/shops.json                 รายชื่อร้าน: scriptId, deploymentId, rootFolderId, workerEnv, defaults (ไม่ใช่ความลับ)
 /scripts/
   gas.mjs                   เขียน gas/.clasp.json จาก shops.json แล้วรัน clasp
 /tests/
@@ -85,6 +85,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
   admin-preview.cjs         เปิดหน้า admin จริงที่ http://localhost:8787 ต่อกับ backend บน mock: `npm run preview:admin` (owner / owner-password, staff1 / staff-password)
 /gas/
   .clasp.json               สร้างอัตโนมัติโดย scripts/gas.mjs (gitignore) ห้ามแก้เอง
+  ShopDefaults.gs           สร้างอัตโนมัติตอน push จาก shops.json → defaults ของร้านนั้น (gitignore) ห้ามแก้เอง
   appsscript.json
   Main.gs                   doGet routing
   Setup.gs                  setup(), onOpen() เมนูใน Sheet
@@ -138,6 +139,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 **แท็บ `Categories`**: คอลัมน์ `name`
 
 **แท็บ `Settings`**: คอลัมน์ `key | value` โดยมี key คือ `shopName`, `logoFileId`, `lineOaId`, `primaryColor`, `workerUrl`
+- ค่าเริ่มต้นต่อร้านอยู่ใน `shops.json` → `defaults` (ตอนนี้ `primaryColor`, `workerUrl`) ถูก compile เป็น `gas/ShopDefaults.gs` ตอน push และเขียนลงแท็บ Settings ให้เฉพาะ key ที่ยังว่าง (ตอน setup / login / Worker ขอ settings) ไม่ทับค่าที่ผู้ใช้บันทึกเอง — แก้ค่าทีหลังให้ทำในหน้า admin
 
 **แท็บ `AuditLog`** (append อย่างเดียว): `timestamp | user | action | productId | code | field | before | after`
 - action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`, `removeDemo`

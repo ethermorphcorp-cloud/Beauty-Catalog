@@ -6,8 +6,39 @@ const SETTING_LABELS = { shopName: 'ชื่อร้าน', lineOaId: 'LINE O
 
 // ---------- settings ----------
 
+/** Per-shop defaults from shops.json (gas/ShopDefaults.gs is generated at push time; absent in tests). */
+function shopDefaults_() {
+  return typeof SHOP_DEFAULTS !== 'undefined' ? SHOP_DEFAULTS : {};
+}
+
+/**
+ * Writes shop defaults into the Settings tab for keys that have no value yet, so the sheet shows
+ * what the system uses. Never overwrites a value someone saved. Call inside withLock_.
+ */
+function applyShopDefaults_() {
+  const defaults = shopDefaults_();
+  const table = readTable_(SHEET.settings);
+  const entries = [];
+  const appended = [];
+  Object.keys(defaults).forEach((key) => {
+    if (SETTING_KEYS.indexOf(key) < 0 || !defaults[key]) return;
+    const rec = table.records.find((r) => r.key === key);
+    if (rec && rec.value !== '') return;
+    entries.push({ field: key, before: '', after: defaults[key] });
+    if (rec) {
+      rec.value = defaults[key];
+      writeRecord_(table, rec);
+    } else {
+      appended.push({ key, value: defaults[key] });
+    }
+  });
+  appendRecords_(table, appended);
+  if (entries.length) auditMany_('system (shops.json)', 'saveSettings', entries);
+  return entries.length;
+}
+
 function readSettings_() {
-  const out = Object.assign({}, SETTING_DEFAULTS);
+  const out = Object.assign({}, SETTING_DEFAULTS, shopDefaults_());
   readTable_(SHEET.settings).records.forEach((r) => {
     if (SETTING_KEYS.indexOf(r.key) >= 0 && r.value !== '') out[r.key] = r.value;
   });

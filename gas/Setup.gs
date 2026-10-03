@@ -69,6 +69,7 @@ function setup() {
   }
 
   if (!readSettings_().shopName) withLock_(() => writeSettings_({ shopName: ss.getName() }));
+  withLock_(() => applyShopDefaults_());
 
   if (!readUsers_().some((u) => u.role === 'admin')) notes.push('ยังไม่มีผู้ใช้ admin → รันเมนู สร้าง/รีเซ็ตผู้ใช้ admin');
 
