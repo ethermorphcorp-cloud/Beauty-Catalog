@@ -107,7 +107,9 @@ function header(shop) {
   return '<header class="top"><a class="top-inner" href="/">' + logo + '<span class="shop">' + esc(shop.shopName || 'ร้านค้า') + '</span></a></header>';
 }
 
-function layout({ shop, title, description, canonical, image, type, noindex, body, script }) {
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap';
+
+function layout({ shop, title, description, canonical, image, type, noindex, body, script, preloadImage }) {
   const t = theme(shop.primaryColor);
   return '<!doctype html><html lang="th"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' +
@@ -122,7 +124,11 @@ function layout({ shop, title, description, canonical, image, type, noindex, bod
     (image ? '<meta property="og:image" content="' + esc(image) + '"><meta name="twitter:card" content="summary_large_image">' : '') +
     '<meta name="theme-color" content="' + t.primary + '">' +
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-    '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">' +
+    // Load the web font without blocking first paint (system font shows first, then swaps).
+    '<link rel="preload" as="style" href="' + FONT_CSS + '" onload="this.onload=null;this.rel='stylesheet'">' +
+    '<noscript><link rel="stylesheet" href="' + FONT_CSS + '"></noscript>' +
+    (preloadImage ? '<link rel="preload" as="image" href="' + esc(preloadImage.src) + '" imagesrcset="' + esc(preloadImage.srcset) + '" imagesizes="(min-width:1024px) 560px, 100vw" fetchpriority="high">' : '') +
+    '<link rel="icon" href="' + (shop.logoSrc ? esc(shop.logoSrc) : 'data:,') + '">' +
     '<style>' + CSS + ':root{--primary:' + t.primary + ';--on-primary:' + t.onPrimary + ';--accent:' + t.accent + ';--tint:' + t.tint + '}</style>' +
     '</head><body>' + header(shop) + body + (script ? '<script>' + script + '</script>' : '') + '</body></html>';
 }
@@ -167,6 +173,7 @@ export function productPage({ shop, product, images, url, ogImage }) {
     type: 'product',
     body,
     script: (count > 1 ? GALLERY_JS : '') + (shop.lineOaId ? '' : LINE_DEMO_JS),
+    preloadImage: count ? images[0] : null,
   });
 }
 
