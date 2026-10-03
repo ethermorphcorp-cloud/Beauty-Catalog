@@ -148,7 +148,8 @@
 - [x] ทดสอบด้วย `npx wrangler dev --env <shop>` (ใส่ `API_SECRET` ใน `worker/.dev.vars`)
 
 - [x] ทดสอบด้วย GAS จำลอง (2026-10-03): 200 หน้าสินค้า (รหัสพิมพ์เล็กได้), 410 สินค้าซ่อน, 404 ไม่พบ/รหัสผิดรูป, 301 รหัสเก่า, 403 `/img` ลายเซ็นผิดหรือคนละขนาด, 401 `/__sync` ไม่มี/ผิด secret, sync สินค้า+redirect+ซ่อน, OG tags, layout 375/1280 ไม่มี scroll แนวนอน
-- [ ] ทดสอบกับ GAS จริงและรูปจริงจาก Drive ← หลังตั้ง `API_SECRET` ใน Phase 6
+- [x] ทดสอบกับ GAS จริงทั้ง 2 ร้านหลังตั้ง `API_SECRET`: 200 `/p/DEMO-001`, 410 `/p/DEMO-008` (2026-10-03)
+- [ ] ทดสอบรูปจริงจาก Drive ← รอมีสินค้าที่อัปโหลดรูป
 
 **เสร็จเมื่อ:** `wrangler dev` แสดงหน้าสินค้าทดสอบจาก Phase 4 ได้ถูกต้อง, `/img` ที่ลายเซ็นผิดได้ 403, `/__sync` ที่ไม่มี secret ได้ 401, commit `phase 5: worker`
 
@@ -156,14 +157,15 @@
 
 ## Phase 6 — เชื่อม Cloudflare กับ GitHub [คุณ + Claude Code] ×2 (1 Worker ต่อร้าน)
 
-- [ ] **[Claude Code]** push โค้ดทั้งหมดขึ้น `main`
-- [ ] **[คุณ]** Cloudflare dashboard → **Workers & Pages → Create → Import a repository** → เชื่อม GitHub → เลือก repo
+- [x] **[Claude Code]** push โค้ดทั้งหมดขึ้น `main`
+- [x] **[Claude Code]** deploy ครั้งแรกด้วย `npx wrangler deploy --env <shop>` ทั้ง 2 ร้าน (2026-10-03)
+- [ ] **[คุณ]** Worker สร้างไว้แล้ว → Cloudflare dashboard → **Workers & Pages → (ชื่อร้าน) → Settings → Builds → Connect** → เชื่อม GitHub → เลือก repo
   - Project name: `npbeauty` / `lemonbeauty` (ต้องตรงกับ `name` ใน env ของ `wrangler.jsonc`)
   - Root directory: `worker`
   - Deploy command: `npx wrangler deploy --env npbeauty` / `npx wrangler deploy --env lemonbeauty`
-- [ ] **[คุณ]** ตั้ง secret: Worker → **Settings → Variables and Secrets → Add** → ชนิด **Secret** ชื่อ `API_SECRET` ค่าคัดลอกจากเมนู **Catalog → แสดง API_SECRET** ใน Sheet ของร้านเดียวกัน (ห้ามสลับร้าน)
+- [x] **[คุณ]** ตั้ง secret: Worker → **Settings → Variables and Secrets → Add** → ชนิด **Secret** ชื่อ `API_SECRET` ค่าคัดลอกจากเมนู **Catalog → แสดง API_SECRET** ใน Sheet ของร้านเดียวกัน (ห้ามสลับร้าน)
   - หรือสั่ง Claude Code ให้รัน `npx wrangler secret put API_SECRET --env <shop>` แล้ววางค่าในเทอร์มินัลเอง
-- [ ] **[คุณ]** URL ของ Worker: `https://npbeauty.ethermorph-corp.workers.dev` / `https://lemonbeauty.ethermorph-corp.workers.dev`
+- [x] **[คุณ]** URL ของ Worker: `https://npbeauty.ethermorph-corp.workers.dev` / `https://lemonbeauty.ethermorph-corp.workers.dev`
 - [ ] **[คุณ]** หน้า admin ของแต่ละร้าน → **ตั้งค่า** → ใส่ Worker URL ของร้านนั้น, ชื่อร้าน, โลโก้, LINE OA ID, สี → บันทึก
 
 **เสร็จเมื่อ:** (ทั้งสองร้าน) กด copy ลิงก์ใน admin แล้วเปิดลิงก์ได้หน้าสินค้าจาก Worker ของร้านนั้น
