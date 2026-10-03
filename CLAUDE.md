@@ -143,6 +143,8 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`, `removeDemo`
 - `updateProduct` / `saveSettings` บันทึก 1 แถวต่อฟิลด์ที่ค่าเปลี่ยนจริง; ค่า before/after ยาวเกิน 500 ตัวอักษรให้ตัด
 
+**แท็บ `Users`** (แสดงผลอย่างเดียว ผู้ใช้ขอเพิ่ม 2026-10-03): `username | displayName | role | createdAt | lastLoginAt` — เขียนใหม่ทั้งแท็บจาก `USERS` ทุกครั้งที่ผู้ใช้เปลี่ยน (สร้าง/ลบ/ตั้งรหัส/login) ไม่มี salt/hash, ป้องกันแบบเตือน (warning-only) แก้ในแท็บนี้จะถูกเขียนทับ — จัดการผู้ใช้ที่ admin › ตั้งค่า › ผู้ใช้งาน
+
 **Script Properties** (ห้ามเก็บใน Sheet)
 
 | key | ค่า |

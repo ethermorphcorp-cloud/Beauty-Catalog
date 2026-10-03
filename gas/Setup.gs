@@ -24,6 +24,8 @@ function setup() {
   ensureSheet_(ss, SHEET.categories, CATEGORY_HEADERS);
   ensureSheet_(ss, SHEET.settings, SETTINGS_HEADERS);
   ensureSheet_(ss, SHEET.audit, AUDIT_HEADERS);
+  protectUsersSheet_(ensureSheet_(ss, SHEET.users, USER_HEADERS));
+  mirrorUsers_(readUsers_());
   removeBlankDefaultSheet_(ss);
 
   const notes = [];
@@ -91,10 +93,16 @@ function ensureSheet_(ss, name, headers) {
 
 /** Deletes the untouched default tab (Sheet1 / แผ่น1) once our tabs exist. */
 function removeBlankDefaultSheet_(ss) {
-  const ours = [SHEET.products, SHEET.categories, SHEET.settings, SHEET.audit];
+  const ours = [SHEET.products, SHEET.categories, SHEET.settings, SHEET.audit, SHEET.users];
   ss.getSheets().forEach((sh) => {
     if (ours.indexOf(sh.getName()) < 0 && sh.getLastRow() === 0 && ss.getSheets().length > ours.length) ss.deleteSheet(sh);
   });
+}
+
+/** Warn (not block) anyone editing the Users tab by hand: it is regenerated from the admin app. */
+function protectUsersSheet_(sh) {
+  if (sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).length) return;
+  sh.protect().setDescription('แท็บนี้แสดงผู้ใช้จากระบบเท่านั้น เพิ่ม/ลบ/เปลี่ยนรหัสผ่านที่หน้า admin › ตั้งค่า › ผู้ใช้งาน').setWarningOnly(true);
 }
 
 function folderOk_(id) {

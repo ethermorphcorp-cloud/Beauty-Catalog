@@ -33,6 +33,7 @@ class Range {
   }
   setFontWeight() { return this; }
   setNumberFormat() { return this; }
+  clearContent() { for (let r = 0; r < this.rows; r++) { const line = this.sheet.data[this.row - 1 + r]; if (line) for (let c = 0; c < this.cols; c++) line[this.col - 1 + c] = ''; } return this; }
 }
 class Sheet {
   constructor(name) { this.name = name; this.data = []; this.maxRows = 1000; }
@@ -45,6 +46,8 @@ class Sheet {
   getRange(row, col, rows = 1, cols = 1) { return new Range(this, row, col, rows, cols); }
   deleteRow(row) { this.data.splice(row - 1, 1); }
   setFrozenRows() {}
+  getProtections() { return this.protections || []; }
+  protect() { const p = { setDescription() { return p; }, setWarningOnly(v) { p.warningOnly = v; return p; } }; this.protections = [p]; return p; }
 }
 const spreadsheet = {
   sheets: [new Sheet('Sheet1')],
@@ -55,6 +58,7 @@ const spreadsheet = {
   deleteSheet(s) { this.sheets = this.sheets.filter((x) => x !== s); },
 };
 const SpreadsheetApp = {
+  ProtectionType: { SHEET: 'SHEET' },
   getActiveSpreadsheet: () => spreadsheet,
   getUi: () => ({
     createMenu: () => ({ addItem() { return this; }, addSeparator() { return this; }, addToUi() {} }),

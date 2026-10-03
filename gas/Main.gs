@@ -5,12 +5,15 @@ const SHEET = {
   categories: 'Categories',
   settings: 'Settings',
   audit: 'AuditLog',
+  users: 'Users',
 };
 
 const PRODUCT_HEADERS = ['productId', 'code', 'name', 'category', 'description', 'folderId', 'folderUrl', 'status', 'oldCodes', 'coverFileId', 'createdAt', 'updatedAt', 'updatedBy'];
 const CATEGORY_HEADERS = ['name'];
 const SETTINGS_HEADERS = ['key', 'value'];
 const AUDIT_HEADERS = ['timestamp', 'user', 'action', 'productId', 'code', 'field', 'before', 'after'];
+// Read-only mirror of USERS (Script Properties) for owners to see who has access. Never holds salt/hash.
+const USER_HEADERS = ['username', 'displayName', 'role', 'createdAt', 'lastLoginAt'];
 
 const CODE_PATTERN = /^[A-Za-z0-9_-]{1,40}$/;
 const STATUSES = ['active', 'hidden'];

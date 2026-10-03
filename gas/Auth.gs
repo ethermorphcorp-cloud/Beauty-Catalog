@@ -18,6 +18,29 @@ function readUsers_() {
 
 function writeUsers_(users) {
   props_().setProperty('USERS', JSON.stringify(users));
+  mirrorUsers_(users);
+}
+
+/**
+ * Rewrites the Users tab from USERS so the shop owner can see accounts in the Sheet.
+ * The tab is display-only: edits there are overwritten; manage users in the admin app.
+ */
+function mirrorUsers_(users) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET.users);
+  if (!sh) {
+    sh = ensureSheet_(ss, SHEET.users, USER_HEADERS);
+    protectUsersSheet_(sh);
+  }
+  const tz = Session.getScriptTimeZone();
+  const when = (iso) => (iso ? Utilities.formatDate(new Date(iso), tz, 'yyyy-MM-dd HH:mm') : '');
+  const rows = users.map((u) => [u.username, u.displayName, u.role, when(u.createdAt), when(u.lastLoginAt)].map(toCell_));
+  const last = sh.getLastRow();
+  if (last > 1) sh.getRange(2, 1, last - 1, USER_HEADERS.length).clearContent();
+  if (rows.length) {
+    ensureRows_(sh, rows.length + 1);
+    sh.getRange(2, 1, rows.length, USER_HEADERS.length).setValues(rows);
+  }
 }
 
 function normalizeUsername_(username) {

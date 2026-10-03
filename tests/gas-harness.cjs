@@ -54,3 +54,12 @@ const trashedDemo = Object.values(driveItems).filter((f) => f.kind === 'folder' 
 const seedOk = trashedDemo === 12 && seeded.added === 12 && again.added === 0 && again.skipped === 12 && removed.removed === 12 && demoLeft === 0 && demoCatsLeft === 0 && after > maxIdBefore;
 console.log((seedOk ? 'PASS' : 'FAIL') + ' demo seed add/re-add/remove, ids not reused', JSON.stringify({ trashedDemo, seeded, again, removed, demoLeft, demoCatsLeft, maxIdBefore, after }));
 if (!seedOk) process.exitCode = 1;
+
+// Users tab mirrors USERS (no salt/hash) and is protected with a warning.
+const usersTab = spreadsheet.getSheetByName('Users');
+const userRows = usersTab.data.slice(1).filter((r) => r && r[0]);
+const usersOk = usersTab.data[0].join(',') === 'username,displayName,role,createdAt,lastLoginAt' &&
+  userRows.length === JSON.parse(store.USERS).length &&
+  !JSON.stringify(usersTab.data).match(/salt|hash/) && usersTab.protections && usersTab.protections[0].warningOnly === true;
+console.log((usersOk ? 'PASS' : 'FAIL') + ' Users tab mirrors accounts without secrets', JSON.stringify(userRows));
+if (!usersOk) process.exitCode = 1;
