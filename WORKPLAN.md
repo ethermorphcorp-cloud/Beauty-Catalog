@@ -63,12 +63,17 @@ Mockup: https://claude.ai/artifact/TBdXkpz28tFKTUS4h2E6iE — สีหลัก
 
 ### Phase 6 — Cloudflare ↔ GitHub ×2
 - [x] Worker ทั้ง 2 ร้าน deploy แล้ว + API_SECRET + Workers Builds (auto deploy เมื่อ push)
-- [ ] ตั้งค่าร้าน: ชื่อร้าน, โลโก้ Lemon, LINE OA ID (ปุ่ม LINE เป็นโหมดตัวอย่างจนกว่าจะใส่ ID)
+- [x] ตั้งค่าร้าน: ชื่อร้าน + โลโก้ ทั้ง 2 ร้าน
+- [ ] LINE OA ID ทั้ง 2 ร้าน (ปุ่ม LINE เป็นโหมดตัวอย่างจนกว่าจะใส่ ID)
 
 ### Phase 7 — Auto deploy GAS
 - [x] GitHub Actions `deploy-gas.yml` ผ่าน (2026-10-03) — push `gas/**` แล้ว deploy ทั้ง 2 ร้านเอง
 
-### Phase 8 — ทดสอบครบวงจร · Phase 9 — ส่งมอบ
+### Phase 8 — ทดสอบครบวงจร
+- [x] self test บนระบบจริงผ่าน 28/28 ทั้ง 2 ร้าน, Lighthouse มือถือ 91–100, 4 ขนาดจอไม่มี scroll แนวนอน, พรีวิว LINE ถูกต้อง
+- [ ] ปุ่มทัก LINE จริง ← รอ LINE OA ID ของแต่ละร้าน
+
+### Phase 9 — ส่งมอบ
 
 ## ลำดับการทำงาน
 
