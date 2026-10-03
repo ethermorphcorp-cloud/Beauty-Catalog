@@ -3,13 +3,35 @@
 <head>
   <base target="_top">
   <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= include_('admin_css') ?>
 </head>
 <body>
-  <!-- Admin UI is built in Phase 3 (see the approved mockup linked in CLAUDE.md). -->
-  <main style="font-family: sans-serif; padding: 24px;">
-    <p>หน้า admin จะพร้อมใช้งานใน Phase 3</p>
-  </main>
+  <section id="login-screen" class="login" hidden></section>
+
+  <div id="shell" hidden>
+    <header class="app-header">
+      <div class="brand">
+        <span id="brand-logo"></span>
+        <div class="brand-text"><strong id="brand-name"></strong><span>ระบบจัดการสินค้า</span></div>
+      </div>
+      <nav id="desk-tabs" class="desk-tabs" aria-label="เมนูหลัก"></nav>
+      <div class="header-user">
+        <span id="user-chip" class="user-chip"></span>
+        <button type="button" class="icon-btn" data-action="logout" aria-label="ออกจากระบบ" id="logout-btn"></button>
+      </div>
+    </header>
+    <main id="view" class="view"></main>
+    <nav id="bottom-nav" class="bottom-nav" aria-label="เมนูหลัก"></nav>
+  </div>
+
+  <div id="panel-root"></div>
+  <div id="modal-root"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script>window.BOOT = <?!= boot ?>;</script>
   <?!= include_('admin_js') ?>
 </body>
 </html>

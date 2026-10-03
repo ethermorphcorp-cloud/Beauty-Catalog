@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "gas": "node scripts/gas.mjs",
-    "test:gas": "node tests/gas-harness.cjs"
+    "test:gas": "node tests/gas-harness.cjs",
+    "preview:admin": "node tests/admin-preview.cjs"
   }
 }

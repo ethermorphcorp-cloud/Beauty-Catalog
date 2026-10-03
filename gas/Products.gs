@@ -106,7 +106,8 @@ function listProducts(token) {
     requireUser_(token);
     return readProducts_()
       .records.map(publicProduct_)
-      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+      // Newest first; productId breaks ties (CSV imports share one timestamp).
+      .sort((a, b) => (b.createdAt + b.productId).localeCompare(a.createdAt + a.productId));
   });
 }
 

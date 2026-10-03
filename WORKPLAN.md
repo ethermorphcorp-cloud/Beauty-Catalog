@@ -53,7 +53,7 @@ Mockup: https://claude.ai/artifact/TBdXkpz28tFKTUS4h2E6iE — สีหลัก
 ### Phase 2 — GAS หลังบ้าน · Phase 3 — หน้า admin [Claude Code]
 - [x] ออกแบบ UI + อนุมัติ mockup
 - [x] Phase 2: backend (ผู้ใช้/สิทธิ์, Product ID, AuditLog, หมวดหมู่, redirect) — push ทั้ง 2 ร้าน, `npm run test:gas` ผ่าน 21/21 (ทดสอบบน Sheet จริงหลัง Phase 4 ผ่านเมนู Catalog → ทดสอบระบบ)
-- [ ] Phase 3: admin UI ตาม mockup
+- [x] Phase 3: admin UI ตาม mockup — push ทั้ง 2 ร้าน, ทดสอบบน `npm run preview:admin` แล้ว (ทดสอบบน Apps Script จริงหลัง Phase 4)
 
 ### Phase 4 — Deploy GAS ครั้งแรก ×2 [คุณ + Claude Code]
 - [ ] ตั้งค่าเริ่มต้น, รหัสผ่าน, New deployment (ครั้งเดียวต่อร้าน) → ส่ง URL + Deployment ID

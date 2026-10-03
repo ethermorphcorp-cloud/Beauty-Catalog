@@ -80,7 +80,9 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 /scripts/
   gas.mjs                   เขียน gas/.clasp.json จาก shops.json แล้วรัน clasp
 /tests/
-  gas-harness.cjs           mock บริการ Apps Script แล้วรัน _selfTest() บน Node: `npm run test:gas`
+  gas-mocks.cjs             mock บริการ Apps Script (Sheets, Drive, Cache, Properties ฯลฯ) ใช้ร่วมกัน
+  gas-harness.cjs           รัน _selfTest() บน Node: `npm run test:gas`
+  admin-preview.cjs         เปิดหน้า admin จริงที่ http://localhost:8787 ต่อกับ backend บน mock: `npm run preview:admin` (owner / owner-password, staff1 / staff-password)
 /gas/
   .clasp.json               สร้างอัตโนมัติโดย scripts/gas.mjs (gitignore) ห้ามแก้เอง
   appsscript.json
@@ -245,6 +247,10 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 ## 8. คำสั่งที่ใช้บ่อย
 
 ```bash
+# ทดสอบในเครื่อง (ไม่ต้องใช้บัญชี Google)
+npm run test:gas                                          # backend self test บน mock
+npm run preview:admin                                     # หน้า admin บน http://localhost:8787
+
 # GAS (<shop> = npbeauty | lemonbeauty | all)
 npm run gas -- <shop> push                                # clasp push -f
 npm run gas -- <shop> deploy "msg"                        # clasp deploy -i <deploymentId> (อัปเดต deployment เดิม)

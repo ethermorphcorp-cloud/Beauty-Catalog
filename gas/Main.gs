@@ -18,11 +18,25 @@ const STATUSES = ['active', 'hidden'];
 function doGet(e) {
   const params = (e && e.parameter) || {};
   if (params.api) return handleApi_(params);
-  return HtmlService.createTemplateFromFile('admin')
+  const boot = bootData_();
+  const tpl = HtmlService.createTemplateFromFile('admin');
+  // Escape "<" so shop text can never close the inline <script> it is embedded in.
+  tpl.boot = JSON.stringify(boot).replace(/</g, '\\u003c');
+  return tpl
     .evaluate()
-    .setTitle('ระบบจัดการสินค้า')
+    .setTitle((boot.settings.shopName ? boot.settings.shopName + ' · ' : '') + 'ระบบจัดการสินค้า')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+}
+
+/** Public branding for the login screen (before anyone signs in). */
+function bootData_() {
+  try {
+    const s = readSettings_();
+    return { settings: { shopName: s.shopName, logoFileId: s.logoFileId, primaryColor: s.primaryColor } };
+  } catch (err) {
+    return { settings: { shopName: '', logoFileId: '', primaryColor: '#2563EB' }, setupNeeded: true };
+  }
 }
 
 /** Inlines another HTML file inside a template: <?!= include_('admin_css') ?> */
