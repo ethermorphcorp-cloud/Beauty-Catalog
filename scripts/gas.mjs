@@ -1,5 +1,5 @@
 // Run clasp for one shop (or all) by writing gas/.clasp.json from shops.json.
-// Usage: node scripts/gas.mjs <shop|all> <push|deploy|open> [description]
+// Usage: node scripts/gas.mjs <shop|all> <push|deploy|open|deployments> [description]
 import { readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,7 @@ const commands = {
     return ['deploy', '-i', shop.deploymentId, '-d', description];
   },
   open: () => ['open'],
+  deployments: () => ['deployments'],
 };
 
 if (!target || !commands[command] || (target !== 'all' && !shops[target])) {
@@ -43,7 +44,10 @@ for (const name of names) {
   }
   writeFileSync(join(gasDir, '.clasp.json'), JSON.stringify({ scriptId: shop.scriptId, rootDir: '.' }, null, 2) + '\n');
   console.log(`[${name}] clasp ${args.join(' ')}`);
-  const result = spawnSync('clasp', args, { cwd: gasDir, stdio: 'inherit', shell: process.platform === 'win32' });
+  // On Windows clasp is a .cmd shim and needs a shell, which splits on spaces, so quote each argument.
+  const shell = process.platform === 'win32';
+  const argv = shell ? args.map((x) => (/[s"&|<>^]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x)) : args;
+  const result = spawnSync('clasp', argv, { cwd: gasDir, stdio: 'inherit', shell });
   if (result.status !== 0) failed = true;
 }
 process.exit(failed ? 1 : 0);

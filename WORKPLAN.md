@@ -6,8 +6,8 @@
 
 | ร้าน | key | Worker URL | Script ID | Deployment ID |
 |---|---|---|---|---|
-| NPBeauty | `npbeauty` | https://npbeauty.ethermorph-corp.workers.dev | `10kH9xDU…ERkt` | ⏳ |
-| LemonBeauty | `lemonbeauty` | https://lemonbeauty.ethermorph-corp.workers.dev | `16CtkagF…mkC27` | ⏳ |
+| NPBeauty | `npbeauty` | https://npbeauty.ethermorph-corp.workers.dev | `10kH9xDU…ERkt` | `AKfycbyfMCb5…Jl1-A` |
+| LemonBeauty | `lemonbeauty` | https://lemonbeauty.ethermorph-corp.workers.dev | `16CtkagF…mkC27` | `AKfycbzGSVAO…Q1E8e` |
 
 แยกระบบกันคนละชุด (Sheet, Apps Script, Drive, Worker, KV, secret, รหัสผ่าน) ใช้โค้ดชุดเดียวใน repo นี้ · ใช้ workers.dev ไปก่อน ผูกโดเมนทีหลังได้
 
@@ -56,7 +56,7 @@ Mockup: https://claude.ai/artifact/TBdXkpz28tFKTUS4h2E6iE — สีหลัก
 - [x] Phase 3: admin UI ตาม mockup — push ทั้ง 2 ร้าน, ทดสอบบน `npm run preview:admin` แล้ว (ทดสอบบน Apps Script จริงหลัง Phase 4)
 
 ### Phase 4 — Deploy GAS ครั้งแรก ×2 [คุณ + Claude Code]
-- [ ] ตั้งค่าเริ่มต้น, รหัสผ่าน, New deployment (ครั้งเดียวต่อร้าน) → ส่ง URL + Deployment ID
+- [x] ตั้งค่าเริ่มต้น, ผู้ใช้ admin, New deployment (ครั้งเดียวต่อร้าน) — ทั้ง 2 ร้านเปิด /exec ได้ และ API ตอบ forbidden เมื่อ key ผิด (2026-10-03)
 
 ### Phase 5 — Worker [Claude Code]
 - [ ] KV ×2, router/render/gas/sign → commit `phase 5: worker`

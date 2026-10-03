@@ -122,15 +122,15 @@
 
 ขั้นนี้ต้องทำมือครั้งเดียว**ต่อร้าน** (ทำกับ Sheet ของ NPBeauty แล้วทำซ้ำกับ LemonBeauty) เพื่ออนุญาตสิทธิ์และได้ deployment ID
 
-- [ ] **[คุณ]** รีเฟรช Sheet → เมนู **Catalog → ตั้งค่าเริ่มต้น** → กดอนุญาตสิทธิ์ (Sheets, Drive, ส่ง request ภายนอก)
+- [x] **[คุณ]** รีเฟรช Sheet → เมนู **Catalog → ตั้งค่าเริ่มต้น** → กดอนุญาตสิทธิ์ (Sheets, Drive, ส่ง request ภายนอก)
   - ถ้าเจอหน้า "Google hasn't verified this app" ให้กด Advanced → Go to ... (unsafe) ซึ่งปกติสำหรับสคริปต์ของตัวเอง
-- [ ] **[คุณ]** **Catalog → สร้าง/รีเซ็ตผู้ใช้ admin** (ผู้ใช้ admin คนแรก)
-- [ ] **[คุณ]** **Catalog → ทดสอบระบบ** → ทุกบรรทัด PASS
+- [x] **[คุณ]** **Catalog → สร้าง/รีเซ็ตผู้ใช้ admin** (ผู้ใช้ admin คนแรก)
+- [x] **[คุณ]** **Catalog → ทดสอบระบบ** → ทุกบรรทัด PASS
 - [ ] **[คุณ]** (ไม่บังคับ) **Catalog → เพิ่มข้อมูลตัวอย่าง** → สินค้า DEMO-001…DEMO-012 สำหรับลองระบบ ลบทีหลังด้วย **Catalog → ลบข้อมูลตัวอย่าง**
-- [ ] **[คุณ]** ใน Apps Script editor: **Deploy → New deployment** → ชนิด **Web app** → Execute as **Me** → Who has access **Anyone** → Deploy
-- [ ] **[คุณ]** จด **Deployment ID** และ **Web app URL** (`.../exec`)
+- [x] **[คุณ]** ใน Apps Script editor: **Deploy → New deployment** → ชนิด **Web app** → Execute as **Me** → Who has access **Anyone** → Deploy
+- [x] **[คุณ]** จด **Deployment ID** และ **Web app URL** (`.../exec`)
   - ⚠️ นี่เป็นครั้งเดียวที่กด New deployment ต่อจากนี้ห้ามกดอีก
-- [ ] **[Claude Code]** สั่ง: `ทำ Phase 4: npbeauty GAS_URL=<URL> deploymentId=<ID>, lemonbeauty GAS_URL=<URL> deploymentId=<ID>` → ใส่ `deploymentId` ใน `shops.json`, `GAS_URL` ใน env ของแต่ละร้านใน `worker/wrangler.jsonc` และเขียนลง README
+- [x] **[Claude Code]** สั่ง: `ทำ Phase 4: npbeauty GAS_URL=<URL> deploymentId=<ID>, lemonbeauty GAS_URL=<URL> deploymentId=<ID>` → ใส่ `deploymentId` ใน `shops.json`, `GAS_URL` ใน env ของแต่ละร้านใน `worker/wrangler.jsonc` และเขียนลง README
 
 **เสร็จเมื่อ:** (ทั้งสองร้าน) เปิด Web app URL แล้วล็อกอิน เพิ่มสินค้าทดสอบพร้อมรูปได้ และเปิด `{GAS_URL}?api=product&code=<รหัส>&key=<API_SECRET>` แล้วได้ JSON
 
