@@ -177,10 +177,13 @@
 > **สั่ง Claude Code:** `ทำ Phase 7`
 
 - [x] **[Claude Code]** สร้าง `.github/workflows/deploy-gas.yml`: ทดสอบ `npm run test:gas` ก่อน แล้ว ทำงานเมื่อ push เข้า `main` ที่แก้ใน `gas/**` → ติดตั้ง `@google/clasp@3.4.1` → เขียน secret `CLASPRC_JSON` ลง `~/.clasprc.json` → `npm run gas -- all push` → `npm run gas -- all deploy "${{ github.sha }}"` (`deploymentId` อ่านจาก `shops.json`)
-- [ ] **[คุณ]** GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**
+- [x] **[คุณ]** GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**
   - `CLASPRC_JSON` = เนื้อหาไฟล์ `~/.clasprc.json` บนเครื่องคุณ (รันคำสั่ง `gh secret set` เอง หรือคัดลอกเอง — ไม่ต้องให้ Claude อ่าน)
   - ไม่ต้องตั้ง `GAS_DEPLOYMENT_ID` แล้ว (อ่านจาก `shops.json`)
-- [ ] **[Claude Code]** push แล้วดูว่า Action ผ่าน และหน้า admin › ตั้งค่า แสดง "เวอร์ชันระบบ <commit>" ตรงกับ commit ล่าสุด
+- [x] **[Claude Code]** push แล้วดูว่า Action ผ่าน และหน้า admin › ตั้งค่า แสดง "เวอร์ชันระบบ <commit>" ตรงกับ commit ล่าสุด
+
+- [x] ผลทดสอบ 2026-10-03: run #37121800735 สีเขียว → deployment เดิมทั้ง 2 ร้านเป็น @5 "ci f7a54bd", หน้า admin แสดงเวอร์ชัน f7a54bd, URL `/exec` ไม่เปลี่ยน
+- หมายเหตุ: ตั้ง secret บน PowerShell ต้องใช้ `Get-Content "$HOME.clasprc.json" -Raw | gh secret set CLASPRC_JSON ...` (แบบ `--body "$(cat ...)"` ทำให้เครื่องหมาย `"` หาย)
 
 **เสร็จเมื่อ:** Action เป็นสีเขียว และ Web app URL เดิมของทั้งสองร้านแสดงข้อความที่แก้แล้ว (URL ไม่เปลี่ยน)
 

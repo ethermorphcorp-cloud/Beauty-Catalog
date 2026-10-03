@@ -61,7 +61,14 @@ Mockup: https://claude.ai/artifact/TBdXkpz28tFKTUS4h2E6iE — สีหลัก
 ### Phase 5 — Worker [Claude Code]
 - [x] KV ×2, router/render/gas/sign, OG tags, 404/410, cache — ทดสอบกับ GAS จำลองผ่าน (GAS จริง/รูปจริงทดสอบใน Phase 6)
 
-### Phase 6 — Cloudflare ↔ GitHub ×2 · Phase 7 — Auto deploy GAS · Phase 8 — ทดสอบ · Phase 9 — ส่งมอบ
+### Phase 6 — Cloudflare ↔ GitHub ×2
+- [x] Worker ทั้ง 2 ร้าน deploy แล้ว + API_SECRET + Workers Builds (auto deploy เมื่อ push)
+- [ ] ตั้งค่าร้าน: ชื่อร้าน, โลโก้ Lemon, LINE OA ID (ปุ่ม LINE เป็นโหมดตัวอย่างจนกว่าจะใส่ ID)
+
+### Phase 7 — Auto deploy GAS
+- [x] GitHub Actions `deploy-gas.yml` ผ่าน (2026-10-03) — push `gas/**` แล้ว deploy ทั้ง 2 ร้านเอง
+
+### Phase 8 — ทดสอบครบวงจร · Phase 9 — ส่งมอบ
 
 ## ลำดับการทำงาน
 
