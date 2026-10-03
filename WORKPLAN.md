@@ -74,6 +74,7 @@ Mockup: https://claude.ai/artifact/TBdXkpz28tFKTUS4h2E6iE — สีหลัก
 - [ ] ปุ่มทัก LINE จริง ← รอ LINE OA ID ของแต่ละร้าน
 
 ### Phase 9 — ส่งมอบ
+- [x] README ภาษาไทยฉบับเต็ม (ใช้งาน admin, CSV, LINE, รหัสผ่าน, Sheet, แก้ปัญหา, โควตา, ผู้ดูแล, ข้อห้าม) + เมนูหมุน API_SECRET
 
 ## ลำดับการทำงาน
 

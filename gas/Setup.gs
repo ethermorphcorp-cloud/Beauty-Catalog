@@ -7,6 +7,7 @@ function onOpen() {
     .addItem('ตั้งค่าเริ่มต้น', 'setup')
     .addItem('สร้าง/รีเซ็ตผู้ใช้ admin', 'menuUpsertAdmin')
     .addItem('แสดง API_SECRET', 'menuShowApiSecret')
+    .addItem('สร้าง API_SECRET ใหม่', 'menuRotateApiSecret')
     .addSeparator()
     .addItem('เพิ่มข้อมูลตัวอย่าง', 'menuSeedDemo')
     .addItem('ลบข้อมูลตัวอย่าง', 'menuRemoveDemo')
@@ -142,6 +143,29 @@ function menuShowApiSecret() {
     return;
   }
   ui.alert('API_SECRET', secret + '\n\nคัดลอกไปใส่ใน Cloudflare Worker ของร้านนี้เท่านั้น ห้ามส่งในแชท', ui.ButtonSet.OK);
+}
+
+/** Replaces API_SECRET with a new random value. The Worker's copy must be changed to match right after. */
+function rotateApiSecret_(actor) {
+  const secret = randomToken_();
+  withLock_(() => {
+    props_().setProperty('API_SECRET', secret);
+    audit_(actor, 'rotateApiSecret', { field: 'API_SECRET' }); // the value itself is never logged
+  });
+  return secret;
+}
+
+function menuRotateApiSecret() {
+  requireEditorContext_();
+  const ui = SpreadsheetApp.getUi();
+  const answer = ui.alert(
+    'สร้าง API_SECRET ใหม่',
+    'ค่าเดิมจะใช้ไม่ได้ทันที หน้าร้านจะดึงข้อมูลจาก Sheet ไม่ได้จนกว่าจะนำค่าใหม่ไปใส่ใน Cloudflare Worker ของร้านนี้\n\nพร้อมทำต่อทันทีหรือไม่?',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (answer !== ui.Button.OK) return;
+  const secret = rotateApiSecret_(Session.getActiveUser().getEmail());
+  ui.alert('API_SECRET ใหม่', secret + '\n\nคัดลอกไปตั้งใน Cloudflare Worker ของร้านนี้ทันที (ดูขั้นตอนใน README หัวข้อ "เปลี่ยน API_SECRET") ห้ามส่งในแชท', ui.ButtonSet.OK);
 }
 
 function menuSelfTest() {

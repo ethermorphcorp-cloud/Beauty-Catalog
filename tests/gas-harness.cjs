@@ -84,3 +84,14 @@ const afterLock = run(`login('locktest', 'right-password')`);
 const lockOk = attempts.every((c) => c === 'auth_failed') && !afterLock.ok && afterLock.code === 'locked';
 console.log((lockOk ? 'PASS' : 'FAIL') + ' 5 wrong passwords lock the account', JSON.stringify({ attempts, afterLock: afterLock.code }));
 if (!lockOk) process.exitCode = 1;
+
+// API_SECRET rotation: new value differs, the old one is refused by the Worker API, nothing secret is logged.
+const oldSecret = run(`props_().getProperty('API_SECRET')`);
+const newSecret = run(`rotateApiSecret_('test')`);
+const viaOld = JSON.parse(run(`handleApi_({ api: 'settings', key: '${oldSecret}' })`).text);
+const viaNew = JSON.parse(run(`handleApi_({ api: 'settings', key: '${newSecret}' })`).text);
+const auditText = JSON.stringify(spreadsheet.getSheetByName('AuditLog').data);
+const rotateOk = newSecret !== oldSecret && newSecret.length >= 32 && viaOld.error === 'forbidden' && viaNew.ok === true &&
+  auditText.indexOf('rotateApiSecret') >= 0 && auditText.indexOf(newSecret) < 0 && auditText.indexOf(oldSecret) < 0;
+console.log((rotateOk ? 'PASS' : 'FAIL') + ' API_SECRET rotation (old refused, new accepted, not logged)');
+if (!rotateOk) process.exitCode = 1;

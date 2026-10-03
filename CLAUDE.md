@@ -72,7 +72,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 ```
 /CLAUDE.md
 /PLAN.md
-/README.md                  คู่มือติดตั้งและใช้งานสำหรับผู้ใช้ (ภาษาไทย)
+/README.md                  คู่มือใช้งานและส่งมอบ (ภาษาไทย) — ถ้าเปลี่ยนพฤติกรรมของระบบ ให้แก้ README ให้ตรงด้วย
 /WORKPLAN.md                checklist / สถานะงานปัจจุบัน
 /.gitignore
 /package.json               npm run gas -- <shop|all> <push|deploy|open>
@@ -109,7 +109,9 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
   src/gas.js                เรียก GAS API
   src/sign.js               HMAC สำหรับลิงก์รูป
 /docs/
-  csv-template.csv
+  csv-template.csv          ไฟล์ตัวอย่างนำเข้า (UTF-8 BOM, import ได้ทันที)
+  brand/                    ไฟล์โลโก้ต้นฉบับของแต่ละร้าน
+  test/                     ไฟล์ CSV ทดสอบ (UTF-8 และ ANSI) ใช้ตอนทดสอบ
 /.github/workflows/
   deploy-gas.yml            push เข้า main ที่แก้ gas/** ฯลฯ → test:gas → clasp push + deploy -i ทุกร้าน (secret CLASPRC_JSON)
 ```
