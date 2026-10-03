@@ -35,6 +35,7 @@ function doGet(e) {
 /** Public branding for the login screen (before anyone signs in). */
 function bootData_() {
   try {
+    ensureUsersTab_();
     const s = readSettings_();
     return { settings: { shopName: s.shopName, logoFileId: s.logoFileId, primaryColor: s.primaryColor }, version: buildVersion_() };
   } catch (err) {

@@ -52,6 +52,9 @@ jobs:
           fi
           umask 077
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          # Fail early with a clear message if the secret was pasted incorrectly (e.g. quotes stripped).
+          node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.clasprc.json', 'utf8'))" \
+            || { echo "::error::CLASPRC_JSON is not valid JSON — re-set it from the exact contents of ~/.clasprc.json"; exit 1; }
 
       - name: Push code to every shop
         run: npm run gas -- all push

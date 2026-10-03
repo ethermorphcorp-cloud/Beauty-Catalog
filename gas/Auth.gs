@@ -21,6 +21,16 @@ function writeUsers_(users) {
   mirrorUsers_(users);
 }
 
+/** Creates the Users tab on first admin page load after an upgrade (no need to re-run setup). */
+function ensureUsersTab_() {
+  if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET.users)) return;
+  try {
+    withLock_(() => mirrorUsers_(readUsers_()));
+  } catch (err) {
+    console.warn('Users tab not created yet', err);
+  }
+}
+
 /**
  * Rewrites the Users tab from USERS so the shop owner can see accounts in the Sheet.
  * The tab is display-only: edits there are overwritten; manage users in the admin app.
