@@ -23,6 +23,17 @@ function _selfTest() {
   const workerUrl = String(readSettings_().workerUrl || '').replace(/\/+$/, '');
   const page = (code) =>
     UrlFetchApp.fetch(workerUrl + '/p/' + encodeURIComponent(code) + '?selftest=' + Date.now(), { muteHttpExceptions: true, followRedirects: false });
+  // A key read moments earlier can stay cached at that Cloudflare location for up to ~60 s, so changes to a
+  // page the test already opened are polled for (the shop promises updates "within about a minute").
+  const pageUntil = (code, ok) => {
+    const deadline = Date.now() + 90 * 1000;
+    let res = page(code);
+    while (!ok(res) && Date.now() < deadline) {
+      Utilities.sleep(5000);
+      res = page(code);
+    }
+    return res;
+  };
   const onWorker = (label, fn) => {
     if (!workerUrl) {
       results.push('SKIP ' + label + ' (ยังไม่ได้ตั้ง Worker URL)');
@@ -75,10 +86,9 @@ function _selfTest() {
     onWorker('shop page after rename', () => {
       const renamed = page(code2);
       check('shop page shows the edited name right away', renamed.getResponseCode() === 200 && renamed.getContentText().indexOf('แก้แล้ว') >= 0, 'HTTP ' + renamed.getResponseCode());
-      const old = page(code1);
-      const headers = old.getHeaders();
-      const location = String(headers.Location || headers.location || '');
-      check('old shop link 301 → new code', old.getResponseCode() === 301 && location.indexOf('/p/' + code2) >= 0, old.getResponseCode() + ' ' + location);
+      const locationOf = (res) => String(res.getHeaders().Location || res.getHeaders().location || '');
+      const old = pageUntil(code1, (res) => res.getResponseCode() === 301);
+      check('old shop link 301 → new code (within 90 s)', old.getResponseCode() === 301 && locationOf(old).indexOf('/p/' + code2) >= 0, old.getResponseCode() + ' ' + locationOf(old));
     });
 
     const hidden = setStatus(staffToken, productId, 'hidden');
@@ -86,8 +96,8 @@ function _selfTest() {
     const viaHidden = apiProduct_(code2);
     check('api reports hidden without details', viaHidden.ok && viaHidden.product.status === 'hidden' && !viaHidden.product.name);
     onWorker('shop page after hide', () => {
-      const gone = page(code2);
-      check('hidden product page is 410 "ไม่พร้อมจำหน่าย"', gone.getResponseCode() === 410 && gone.getContentText().indexOf('สินค้านี้ไม่พร้อมจำหน่าย') >= 0, 'HTTP ' + gone.getResponseCode());
+      const gone = pageUntil(code2, (res) => res.getResponseCode() === 410);
+      check('hidden product page is 410 "ไม่พร้อมจำหน่าย" (within 90 s)', gone.getResponseCode() === 410 && gone.getContentText().indexOf('สินค้านี้ไม่พร้อมจำหน่าย') >= 0, 'HTTP ' + gone.getResponseCode());
     });
 
     const cats = getCategories(adminToken);

@@ -103,6 +103,18 @@ async function shopFor(env, ctx, url) {
   return shop;
 }
 
+/**
+ * KV keeps a read cached at each edge location for cacheTtl seconds (default 60), so a synced change can
+ * look stale there for that long. 30 s is the minimum Cloudflare allows; older local runtimes reject it.
+ */
+async function readProductEntry(env, key) {
+  try {
+    return await env.CATALOG.get(key, { type: 'json', cacheTtl: 30 });
+  } catch (err) {
+    return env.CATALOG.get(key, 'json');
+  }
+}
+
 // ---------- routes ----------
 
 async function handleProduct(env, ctx, code, url) {
@@ -110,7 +122,7 @@ async function handleProduct(env, ctx, code, url) {
   if (!CODE.test(code)) return html(notFoundPage(shop, url.href), 404, CACHE_HTML);
 
   const key = 'p:' + code.toLowerCase();
-  let entry = await env.CATALOG.get(key, 'json');
+  let entry = await readProductEntry(env, key);
   if (!entry) {
     entry = await fetchProduct(env, code); // throws if GAS is unreachable → 503 (not cached)
     if (!entry) return html(notFoundPage(shop, url.href), 404, CACHE_HTML);
