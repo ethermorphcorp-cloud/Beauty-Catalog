@@ -74,3 +74,12 @@ const filled2 = run(`withLock_(() => applyShopDefaults_())`);
 const defaultsOk2 = filled2 === 1 && run('readSettings_()').primaryColor === '#8E4AA8';
 console.log((defaultsOk && defaultsOk2 ? 'PASS' : 'FAIL') + ' shop defaults fill empty settings only', JSON.stringify({ filled, filled2 }));
 if (!(defaultsOk && defaultsOk2)) process.exitCode = 1;
+
+// Lockout: 5 wrong passwords within 15 minutes lock the username, even before a correct one.
+run(`withLock_(() => { const u = readUsers_(); u.push(newUser_('locktest', 'Lock test', 'staff', 'right-password')); writeUsers_(u); })`);
+const attempts = [];
+for (let i = 0; i < 5; i++) attempts.push(run(`login('locktest', 'wrong-password')`).code);
+const afterLock = run(`login('locktest', 'right-password')`);
+const lockOk = attempts.every((c) => c === 'auth_failed') && !afterLock.ok && afterLock.code === 'locked';
+console.log((lockOk ? 'PASS' : 'FAIL') + ' 5 wrong passwords lock the account', JSON.stringify({ attempts, afterLock: afterLock.code }));
+if (!lockOk) process.exitCode = 1;
