@@ -1,0 +1,2 @@
+# Test fixtures must keep their exact bytes (UTF-8 BOM / ANSI encoding, line endings).
+docs/test/*.csv -text
