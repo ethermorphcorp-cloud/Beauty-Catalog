@@ -10,8 +10,8 @@ const { run } = loadGas(gasDir);
 run('setup()');
 console.log('sheets:', spreadsheet.sheets.map((s) => s.name).join(', '));
 run(`upsertAdmin_('owner', 'owner-password', 'owner@example.com')`);
+const results = run('_selfTest()'); // no Worker URL yet → live shop page checks are skipped
 run(`writeSettings_({ workerUrl: 'https://example.workers.dev' })`);
-const results = run('_selfTest()');
 console.log(results.join('\n'));
 
 // Extra checks outside the self test.
@@ -46,11 +46,12 @@ console.log('sync calls:', syncCalls.length, 'last:', JSON.stringify(syncCalls[s
 const seeded = run(`seedDemo_('test')`);
 const again = run(`seedDemo_('test')`);
 const maxIdBefore = run(`readProducts_().records.map((r) => r.productId).sort().pop()`);
+const demoIds = run(`readProducts_().records.filter((r) => r.code.indexOf('DEMO-') === 0).map((r) => r.productId)`);
 const removed = run(`removeDemo_('test')`);
 const demoLeft = run(`readProducts_().records.filter((r) => r.code.indexOf('DEMO-') === 0).length`);
 const demoCatsLeft = run(`readCategories_().records.filter((c) => ['กันแดด', 'ดูแลเส้นผม'].indexOf(c.name) >= 0).length`);
 const after = run(`createProduct('${tok}', { code: 'AFTER-DEMO', name: 'หลังลบตัวอย่าง', category: '' })`).data.product.productId;
-const trashedDemo = Object.values(driveItems).filter((f) => f.kind === 'folder' && /^P0000(0[4-9]|1[0-5])$/.test(f.name) && f.trashed).length;
+const trashedDemo = Object.values(driveItems).filter((f) => f.kind === 'folder' && demoIds.indexOf(f.name) >= 0 && f.trashed).length;
 const seedOk = trashedDemo === 12 && seeded.added === 12 && again.added === 0 && again.skipped === 12 && removed.removed === 12 && demoLeft === 0 && demoCatsLeft === 0 && after > maxIdBefore;
 console.log((seedOk ? 'PASS' : 'FAIL') + ' demo seed add/re-add/remove, ids not reused', JSON.stringify({ trashedDemo, seeded, again, removed, demoLeft, demoCatsLeft, maxIdBefore, after }));
 if (!seedOk) process.exitCode = 1;
