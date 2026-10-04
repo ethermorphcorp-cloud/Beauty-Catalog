@@ -50,7 +50,8 @@
     addBox: '<rect x="3" y="3" width="18" height="18" rx="4"></rect><path d="M12 8v8M8 12h8"></path>',
     grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect>',
     chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>',
-    gear: '<circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1"></path>',
+    gear: '<path d="M10.16 4.63L10.44 2.12L13.56 2.12L13.84 4.63L15.91 5.49L17.88 3.91L20.09 6.12L18.51 8.09L19.37 10.16L21.88 10.44L21.88 13.56L19.37 13.84L18.51 15.91L20.09 17.88L17.88 20.09L15.91 18.51L13.84 19.37L13.56 21.88L10.44 21.88L10.16 19.37L8.09 18.51L6.12 20.09L3.91 17.88L5.49 15.91L4.63 13.84L2.12 13.56L2.12 10.44L4.63 10.16L5.49 8.09L3.91 6.12L6.12 3.91L8.09 5.49Z"></path><circle cx="12" cy="12" r="3.2"></circle>',
+    upload: '<path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path>',
     image: '<rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-9 9"></path>',
     x: '<path d="M6 6l12 12M18 6L6 18"></path>',
     back: '<path d="M15 5l-7 7 7 7"></path>',
@@ -304,8 +305,9 @@
   }
 
   // ---------- chrome & routing ----------
-  const DESK_TABS = [['list', 'รายการสินค้า'], ['summary', 'สรุป'], ['add', 'เพิ่มสินค้า'], ['csv', 'นำเข้า CSV'], ['settings', 'ตั้งค่า']];
-  const MOBILE_TABS = [['add', 'addBox', 'เพิ่มสินค้า'], ['list', 'grid', 'รายการสินค้า'], ['summary', 'chart', 'สรุป'], ['settings', 'gear', 'ตั้งค่า']];
+  // "เพิ่มสินค้า" is not a menu item: it is a button on the product list that opens the add form (side panel / full page).
+  const DESK_TABS = [['list', 'รายการสินค้า'], ['summary', 'สรุป'], ['csv', 'นำเข้า CSV'], ['settings', 'ตั้งค่า']];
+  const MOBILE_TABS = [['list', 'grid', 'รายการสินค้า'], ['summary', 'chart', 'สรุป'], ['csv', 'upload', 'นำเข้า'], ['settings', 'gear', 'ตั้งค่า']];
 
   function renderChrome() {
     $('#brand-logo').innerHTML = logoHtml();
@@ -325,7 +327,6 @@
   }
 
   function setView(view) {
-    if (view === 'csv' && !DESKTOP.matches) view = 'list';
     if (state.view === 'settings' && view !== 'settings') applyTheme(state.settings.primaryColor); // drop unsaved colour preview
     state.view = view;
     render();
@@ -337,7 +338,6 @@
     updateNav();
     const v = $('#view');
     if (state.view === 'summary') v.innerHTML = summaryHtml();
-    else if (state.view === 'add') v.innerHTML = addHtml();
     else if (state.view === 'csv') v.innerHTML = csvHtml();
     else if (state.view === 'settings') {
       v.innerHTML = settingsHtml();
@@ -358,6 +358,8 @@
   // ---------- product list ----------
   function listHtml() {
     return '<div class="page">' +
+      '<div class="page-head"><h1 class="page-title">รายการสินค้า</h1>' +
+      '<button type="button" class="btn btn-primary" data-action="add-product">' + icon('plus', 18) + 'เพิ่มสินค้า</button></div>' +
       '<div class="list-toolbar"><div class="search"><label class="sr-only" for="q">ค้นหาสินค้า</label>' + icon('search', 20) +
       '<input id="q" class="input" type="search" placeholder="ค้นหารหัสหรือชื่อสินค้า" value="' + esc(state.q) + '" autocomplete="off"></div>' +
       '<div id="list-meta" class="list-meta"></div></div>' +
@@ -384,7 +386,7 @@
         ? '<button type="button" class="chip-filter" data-action="clear-category">หมวด: ' + esc(state.categoryFilter === NO_CATEGORY ? 'ไม่มีหมวด' : state.categoryFilter) + ' ' + icon('x', 14) + '<span class="sr-only">ล้างตัวกรอง</span></button>'
         : '');
     if (!state.products.length) {
-      list.innerHTML = '<div class="empty">' + icon('image', 32) + '<p>ยังไม่มีสินค้า</p><button type="button" class="btn btn-primary" data-nav="add">' + icon('plus', 18) + 'เพิ่มสินค้าแรก</button></div>';
+      list.innerHTML = '<div class="empty">' + icon('image', 32) + '<p>ยังไม่มีสินค้า</p><button type="button" class="btn btn-primary" data-action="add-product">' + icon('plus', 18) + 'เพิ่มสินค้าแรก</button></div>';
       return;
     }
     list.innerHTML = items.length ? items.map(productCard).join('') : '<div class="empty"><p>ไม่พบสินค้าที่ตรงกับการค้นหา</p></div>';
@@ -594,10 +596,9 @@
     return last;
   }
 
-  // ---------- add product ----------
-  function addHtml() {
-    return '<div class="page narrow"><h1 class="page-title">เพิ่มสินค้า</h1>' +
-      '<form id="add-form" class="card" novalidate>' +
+  // ---------- add product (side panel on desktop, full page with breadcrumbs on mobile) ----------
+  function addFormHtml() {
+    return '<form id="add-form" class="card" novalidate>' +
       '<div class="field"><label for="add-code">รหัสสินค้า</label><input id="add-code" class="input" maxlength="40" autocapitalize="characters" spellcheck="false"><p class="hint">A-Z a-z 0-9 - _ ไม่เกิน 40 ตัว ห้ามซ้ำ (แก้ภายหลังได้)</p></div>' +
       '<div class="field"><label for="add-name">ชื่อสินค้า</label><input id="add-name" class="input" maxlength="200"></div>' +
       '<div class="field"><label for="add-cat">หมวดหมู่</label>' + categorySelectHtml('add-cat', state.categoryFilter && state.categoryFilter !== NO_CATEGORY ? state.categoryFilter : '') + '</div>' +
@@ -608,15 +609,36 @@
       '<ul id="add-file-list" class="file-list">' + addFileListHtml() + '</ul>' +
       '<p class="hint">เรียงตามชื่อไฟล์ · รูปแรกเป็นรูปปก · ระบบย่อรูปให้อัตโนมัติ</p></div>' +
       '<div id="add-progress"></div>' +
-      '<button type="submit" class="btn btn-primary btn-block"><span>' + icon('check', 18) + 'บันทึกสินค้า</span></button>' +
-      '</form></div>';
+      '</form>';
   }
 
   function addFileListHtml() {
     return state.addFiles.map((f) => '<li>' + icon('image', 16) + ' ' + esc(f.name) + '</li>').join('');
   }
 
-  async function submitAdd(form) {
+  function openAdd() {
+    state.addFiles = [];
+    panel = { mode: 'add', id: null, images: null };
+    renderPanel();
+  }
+
+  function renderAddPanel() {
+    document.body.classList.add('panel-open');
+    $('#panel-root').innerHTML =
+      '<div class="scrim desk-only" data-action="close-panel"></div>' +
+      '<aside class="panel" role="dialog" aria-modal="true" aria-label="เพิ่มสินค้า">' +
+      '<header class="panel-header">' +
+      '<nav class="crumbs mobile-only" aria-label="เส้นทางหน้า"><button type="button" class="crumb-link" data-action="close-panel">รายการสินค้า</button>' +
+      '<span class="crumb-sep" aria-hidden="true">›</span><span class="crumb-current" aria-current="page" id="panel-title-m" tabindex="-1">เพิ่มสินค้า</span></nav>' +
+      '<h2 id="panel-title-d" class="desk-only" tabindex="-1">เพิ่มสินค้า</h2>' +
+      '<button type="button" class="icon-btn desk-only" data-action="close-panel" aria-label="ปิด">' + icon('x', 22) + '</button></header>' +
+      '<div class="panel-body">' + addFormHtml() + '</div>' +
+      '<footer class="panel-footer single"><button type="submit" form="add-form" class="btn btn-primary btn-lg"><span>' + icon('check', 18) + 'บันทึกสินค้า</span></button></footer></aside>';
+    const title = $(DESKTOP.matches ? '#panel-title-d' : '#panel-title-m');
+    if (title) title.focus();
+  }
+
+  async function submitAdd() {
     const input = {
       code: $('#add-code').value.trim(),
       name: $('#add-name').value.trim(),
@@ -624,7 +646,8 @@
       description: $('#add-desc').value,
     };
     if (!validateProduct(input, null, 'add')) return;
-    await busy(form.querySelector('[type=submit]'), async () => {
+    const adding = () => panel && panel.mode === 'add'; // the user may close the panel while files upload
+    await busy(document.querySelector('.panel-footer [type=submit]'), async () => {
       const data = await call('createProduct', input);
       state.products.unshift(data.product);
       report(data, 'เพิ่มสินค้า ' + data.product.code + ' แล้ว');
@@ -634,6 +657,7 @@
       await refreshCategories();
       state.q = '';
       state.categoryFilter = '';
+      if (adding()) closePanel();
       setView('list');
     });
   }
@@ -664,6 +688,7 @@
   }
 
   function renderPanel() {
+    if (panel && panel.mode === 'add') return renderAddPanel();
     const p = panel && findProduct(panel.id);
     if (!p) return closePanel();
     document.body.classList.add('panel-open');
@@ -855,16 +880,16 @@
         '<div class="table-wrap"><table class="table"><thead><tr><th>แถว</th><th>รหัส</th><th>ชื่อสินค้า</th><th>หมวดหมู่</th><th>โฟลเดอร์รูป</th><th>สถานะ</th></tr></thead><tbody>' +
         shown.map((r, i) => {
           const v = c.verdicts[i];
-          return '<tr><td class="muted">' + (i + 2) + '</td><td>' + esc(r.code || '—') + '</td><td class="wrap">' + esc(r.name || '—') + '</td><td>' + esc(r.category) + '</td>' +
-            '<td class="muted">' + (r.folder_url ? 'มีลิงก์' : 'สร้างโฟลเดอร์ใหม่') + '</td>' +
-            '<td><span class="pill s-' + v.status + '">' + LABEL[v.status] + '</span>' + (v.message ? ' <span class="muted">' + esc(v.message) + '</span>' : '') + '</td></tr>';
+          return '<tr><td class="muted" data-label="แถว">' + (i + 2) + '</td><td data-label="รหัส">' + esc(r.code || '—') + '</td><td class="wrap" data-label="ชื่อสินค้า">' + esc(r.name || '—') + '</td><td data-label="หมวดหมู่">' + esc(r.category || '—') + '</td>' +
+            '<td class="muted" data-label="โฟลเดอร์รูป">' + (r.folder_url ? 'มีลิงก์' : 'สร้างโฟลเดอร์ใหม่') + '</td>' +
+            '<td data-label="สถานะ"><span class="pill s-' + v.status + '">' + LABEL[v.status] + '</span>' + (v.message ? ' <span class="muted">' + esc(v.message) + '</span>' : '') + '</td></tr>';
         }).join('') + '</tbody></table>' +
         (c.rows.length > shown.length ? '<p class="hint" style="padding:10px 12px">และอีก ' + (c.rows.length - shown.length) + ' แถว</p>' : '') + '</div>' +
         '<div id="csv-progress"></div>' +
         '<div class="csv-actions"><span class="muted">แถวที่รหัสซ้ำหรือข้อมูลไม่ครบจะถูกข้าม</span>' +
         '<button type="button" class="btn btn-primary btn-lg" data-action="csv-import"' + (counts.new ? '' : ' disabled') + '><span>' + icon('check', 18) + 'ยืนยันนำเข้า ' + counts.new + ' รายการ</span></button></div>';
     }
-    return '<div class="page"><div class="csv-head"><div><h1 class="page-title">นำเข้าสินค้าจาก CSV</h1>' +
+    return '<div class="page"><div class="csv-head"><div><h1 class="page-title">นำเข้ารายการสินค้า (Bulk upload)</h1>' +
       '<span class="muted">ไฟล์ CSV (UTF-8) คอลัมน์ code, name, category, description, folder_url</span></div>' +
       '<button type="button" class="btn btn-outline" data-action="csv-template">' + icon('download', 18) + 'ดาวน์โหลดไฟล์ตัวอย่าง</button>' +
       '<button type="button" class="btn btn-outline" data-action="pick-files" data-input="csv-file">' + icon('file', 18) + (c ? 'เลือกไฟล์ใหม่' : 'เลือกไฟล์ CSV') + '</button>' +
@@ -1178,6 +1203,7 @@
       case 'toggle-status': return toggleStatus(id);
       case 'copy': return copyLink(id);
       case 'edit': return openEdit(id);
+      case 'add-product': return openAdd();
       case 'close-panel': return closePanel();
       case 'clear-category':
         state.categoryFilter = '';
@@ -1262,10 +1288,6 @@
     if (e.key === 'Escape' && panel && !$('#modal-root').children.length) closePanel();
   }
 
-  function onViewportChange() {
-    if (!DESKTOP.matches && state.view === 'csv') setView('list');
-  }
-
   // Broken Drive thumbnails (not shared yet, deleted) fall back to the placeholder icon behind them.
   document.addEventListener('error', (e) => {
     if (e.target && e.target.matches && e.target.matches('img[data-fallback]')) e.target.remove();
@@ -1278,8 +1300,6 @@
     document.addEventListener('change', onChange);
     document.addEventListener('input', onInput);
     document.addEventListener('keydown', onKeydown);
-    if (DESKTOP.addEventListener) DESKTOP.addEventListener('change', onViewportChange);
-    else DESKTOP.addListener(onViewportChange);
 
     const saved = storage((s) => s.getItem('catalog.token'));
     if (!saved) return renderLogin();

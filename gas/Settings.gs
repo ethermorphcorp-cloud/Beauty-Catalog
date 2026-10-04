@@ -1,7 +1,9 @@
 // Settings.gs — shop settings (Settings tab) and categories (Categories tab).
 
-const SETTING_KEYS = ['shopName', 'logoFileId', 'lineOaId', 'primaryColor', 'workerUrl'];
-const SETTING_DEFAULTS = { shopName: '', logoFileId: '', lineOaId: '', primaryColor: '#2563EB', workerUrl: '' };
+// rootFolderUrl is sheet-only: setup() reads it to switch the root folder and writes it back; it is not
+// editable in the admin app and never sent to the Worker (see publicSettings_).
+const SETTING_KEYS = ['shopName', 'logoFileId', 'lineOaId', 'primaryColor', 'workerUrl', 'rootFolderUrl'];
+const SETTING_DEFAULTS = { shopName: '', logoFileId: '', lineOaId: '', primaryColor: '#2563EB', workerUrl: '', rootFolderUrl: '' };
 const SETTING_LABELS = { shopName: 'ชื่อร้าน', lineOaId: 'LINE OA ID', primaryColor: 'สีหลัก', workerUrl: 'Worker URL' };
 
 // ---------- settings ----------
