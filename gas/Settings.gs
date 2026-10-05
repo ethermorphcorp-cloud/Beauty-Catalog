@@ -99,10 +99,33 @@ function cleanSettingsInput_(input) {
   return out;
 }
 
+/** Settings for the admin UI: stored values plus the Sheet's own URL (display only, never stored or sent to the Worker). */
+function adminSettings_() {
+  return Object.assign(readSettings_(), { sheetUrl: SpreadsheetApp.getActiveSpreadsheet().getUrl() });
+}
+
+/**
+ * oaMessage links only work for LINE Official Account IDs. A real OA has a public page at page.line.me/<id>
+ * (HTTP 200); personal IDs and unknown IDs are redirected to the add-friend page instead (HTTP 3xx/404).
+ * Returns a Thai hint when the ID does not look like an OA, '' when it does or the check could not run.
+ */
+function checkLineOa_(lineOaId) {
+  const id = String(lineOaId || '').replace(/^@/, '');
+  if (!id) return '';
+  try {
+    const res = UrlFetchApp.fetch('https://page.line.me/' + encodeURIComponent(id), { muteHttpExceptions: true, followRedirects: false });
+    if (res.getResponseCode() === 200) return '';
+    return 'ไม่พบหน้า LINE Official Account ของ ' + lineOaId + ' — ปุ่ม "ทัก LINE" อาจขึ้น "user not found" ตรวจว่าเป็น Basic ID / Premium ID ของ LINE Official Account (ไม่ใช่ LINE ID ส่วนตัว)';
+  } catch (err) {
+    console.warn('LINE OA check skipped', err);
+    return '';
+  }
+}
+
 function getSettings(token) {
   return respond_(() => {
     requireUser_(token);
-    return readSettings_();
+    return adminSettings_();
   });
 }
 
@@ -114,7 +137,8 @@ function saveSettings(token, input, confirmPassword) {
   return respond_(() => {
     const user = requireUser_(token);
     const values = cleanSettingsInput_(input);
-    if ('workerUrl' in values && values.workerUrl !== readSettings_().workerUrl) {
+    const previous = readSettings_();
+    if ('workerUrl' in values && values.workerUrl !== previous.workerUrl) {
       confirmPassword_(user, confirmPassword, 'workerUrl');
     }
     const entries = withLock_(() => {
@@ -123,7 +147,12 @@ function saveSettings(token, input, confirmPassword) {
       return changed;
     });
     const sync = entries.length ? syncSettings_() : { synced: false, skipped: true };
-    return { settings: readSettings_(), sync };
+    const warnings = [];
+    if ('lineOaId' in values && values.lineOaId && values.lineOaId !== previous.lineOaId) {
+      const hint = checkLineOa_(values.lineOaId);
+      if (hint) warnings.push(hint);
+    }
+    return { settings: adminSettings_(), sync, warnings };
   });
 }
 

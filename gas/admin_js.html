@@ -53,6 +53,7 @@
     grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect>',
     chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>',
     gear: '<path d="M10.16 4.63L10.44 2.12L13.56 2.12L13.84 4.63L15.91 5.49L17.88 3.91L20.09 6.12L18.51 8.09L19.37 10.16L21.88 10.44L21.88 13.56L19.37 13.84L18.51 15.91L20.09 17.88L17.88 20.09L15.91 18.51L13.84 19.37L13.56 21.88L10.44 21.88L10.16 19.37L8.09 18.51L6.12 20.09L3.91 17.88L5.49 15.91L4.63 13.84L2.12 13.56L2.12 10.44L4.63 10.16L5.49 8.09L3.91 6.12L6.12 3.91L8.09 5.49Z"></path><circle cx="12" cy="12" r="3.2"></circle>',
+    external: '<path d="M14 4h6v6M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path>',
     upload: '<path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path>',
     image: '<rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-9 9"></path>',
     x: '<path d="M6 6l12 12M18 6L6 18"></path>',
@@ -1046,15 +1047,24 @@
       '<p class="hint">PNG/JPG สี่เหลี่ยมจัตุรัส</p></div></div>' +
       '<input id="logo-file" type="file" accept="image/*" class="sr-only" tabindex="-1"></div>' +
       '<div class="field"><label for="set-line">LINE OA ID</label><input id="set-line" class="input" maxlength="41" value="' + esc(s.lineOaId) + '" placeholder="@myshop" autocapitalize="none" spellcheck="false">' +
-      '<p class="hint">ขึ้นต้นด้วย @ ดูได้ใน LINE Official Account Manager</p></div>' +
+      '<p class="hint">ต้องเป็น ID ของ <strong>LINE Official Account</strong> (Basic ID หรือ Premium ID ขึ้นต้นด้วย @) ไม่ใช่ LINE ID ส่วนตัว — ดูได้ใน LINE Official Account Manager</p></div>' +
       '<div class="field"><label for="set-color-hex">สีหลัก</label><div class="color-row">' +
       '<input id="set-color" type="color" value="' + esc(s.primaryColor) + '" aria-label="เลือกสีหลัก">' +
       '<input id="set-color-hex" class="input" maxlength="7" value="' + esc(s.primaryColor) + '" spellcheck="false"></div>' +
       '<div class="preview-box"><span class="hint">ตัวอย่าง</span><span class="chip">หมวดหมู่</span><span class="btn btn-primary btn-block" aria-hidden="true">ทัก LINE</span></div></div>' +
-      '<div class="field"><label for="set-worker">Worker URL (ลิงก์หน้าร้าน)</label><input id="set-worker" class="input" type="url" value="' + esc(s.workerUrl) + '" placeholder="https://xxx.workers.dev" spellcheck="false">' +
-      '<p class="hint">ใช้สร้างลิงก์สินค้าที่ส่งให้ลูกค้า · การเปลี่ยนค่านี้ต้องยืนยันด้วยรหัสผ่าน</p>' +
+      '<div class="field"><label for="set-worker">Worker URL (ลิงก์หน้าร้าน)</label>' +
+      '<div class="input-row"><input id="set-worker" class="input" type="url" readonly value="' + esc(s.workerUrl) + '" placeholder="https://xxx.workers.dev" spellcheck="false">' +
+      '<button type="button" class="btn btn-outline btn-lg" id="worker-edit-btn" data-action="worker-edit">แก้ไข</button></div>' +
+      '<p class="hint">ใช้สร้างลิงก์สินค้าที่ส่งให้ลูกค้า · กดแก้ไขก่อนจึงจะพิมพ์ได้ และการเปลี่ยนค่านี้ต้องยืนยันด้วยรหัสผ่าน</p>' +
       '<div id="worker-warn" class="warn-note" role="status" hidden>' + icon('alert', 18) +
       '<span>คุณกำลังเปลี่ยน Worker URL — ระบบจะส่งข้อมูลสินค้าและรหัสลับของระบบไปที่อยู่ใหม่ และจะขอรหัสผ่านก่อนบันทึก</span></div></div>' +
+      (s.sheetUrl
+        ? '<div class="field"><label for="set-sheet">Google Sheet (ฐานข้อมูลของร้าน)</label>' +
+          '<div class="input-row"><input id="set-sheet" class="input" type="url" readonly value="' + esc(s.sheetUrl) + '">' +
+          '<button type="button" class="btn btn-outline btn-lg" data-action="copy-sheet" aria-label="คัดลอกลิงก์ Google Sheet">' + icon('copy', 18) + '</button>' +
+          '<a class="btn btn-outline btn-lg" href="' + esc(s.sheetUrl) + '" target="_blank" rel="noopener" aria-label="เปิด Google Sheet (แท็บใหม่)">' + icon('external', 18) + '</a></div>' +
+          '<p class="hint">แสดงอย่างเดียว · เปิดได้เฉพาะบัญชี Google ที่ได้รับสิทธิ์ในไฟล์นี้</p></div>'
+        : '') +
       '<div class="sticky-actions"><button type="submit" class="btn btn-primary btn-block"><span>' + icon('check', 18) + 'บันทึกการตั้งค่าร้าน</span></button></div>' +
       '</form>';
   }
@@ -1075,8 +1085,7 @@
       state.settings = data.settings;
       applyTheme(state.settings.primaryColor);
       renderChrome();
-      const warn = $('#worker-warn');
-      if (warn) warn.hidden = true; // the saved URL is now the baseline
+      setWorkerEditing(false); // the saved URL is now the baseline
       report(data, 'บันทึกการตั้งค่าร้านแล้ว');
     };
     if (normUrl(values.workerUrl) === normUrl(state.settings.workerUrl)) {
@@ -1113,6 +1122,23 @@
       });
       if (!retry) return;
       note = 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่\n\n';
+    }
+  }
+
+  /** Worker URL is read-only (grey) until "แก้ไข" is pressed; "ยกเลิก" restores the saved value. */
+  function setWorkerEditing(on) {
+    const input = $('#set-worker');
+    const btn = $('#worker-edit-btn');
+    const warn = $('#worker-warn');
+    if (!input || !btn) return;
+    input.readOnly = !on;
+    btn.textContent = on ? 'ยกเลิก' : 'แก้ไข';
+    if (on) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    } else {
+      input.value = state.settings.workerUrl || '';
+      if (warn) warn.hidden = true;
     }
   }
 
@@ -1313,6 +1339,10 @@
       case 'edit': return openEdit(id);
       case 'add-product': return openAdd();
       case 'close-panel': return closePanel();
+      case 'worker-edit':
+        return setWorkerEditing($('#set-worker').readOnly);
+      case 'copy-sheet':
+        return copyText(state.settings.sheetUrl || '').then((ok) => toast(ok ? 'คัดลอกลิงก์ Google Sheet แล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error'));
       case 'page':
         state.page = Number(el.getAttribute('data-page')) || 1;
         renderListItems();

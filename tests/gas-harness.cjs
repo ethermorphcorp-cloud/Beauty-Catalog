@@ -117,3 +117,20 @@ const urlOk = r1.ok && r2.code === 'confirm_required' && r3.code === 'bad_passwo
   confirmAudit.indexOf('url-password-1') < 0 && r6.code === 'locked';
 console.log((urlOk ? 'PASS' : 'FAIL') + ' Worker URL change needs password', JSON.stringify({ r1: r1.ok, r2: r2.code, r3: r3.code, stillOld, r4: r4.ok, afterNew, r5: r5.ok, r6: r6.code }));
 if (!urlOk) process.exitCode = 1;
+
+// Settings: Sheet URL is shown to the admin UI only; LINE OA IDs that are not Official Accounts get a hint.
+run(`withLock_(() => { const u = readUsers_(); u.push(newUser_('setowner', 'Set owner', 'admin', 'set-password-1')); writeUsers_(u); })`);
+const adminTok = run(`login('setowner', 'set-password-1')`).data.token;
+const got = run(`getSettings('${adminTok}')`).data;
+const publicOnly = JSON.stringify(run('publicSettings_(readSettings_())'));
+const lineBefore = require('./gas-mocks.cjs').lineChecks.length;
+const lineReal = run(`saveSettings('${adminTok}', { lineOaId: '@linedevelopers' })`);
+const lineFake = run(`saveSettings('${adminTok}', { lineOaId: 'jiratheepz' })`);
+const lineSame = run(`saveSettings('${adminTok}', { lineOaId: '@jiratheepz', shopName: 'ชื่ออื่น' })`);
+const checks = require('./gas-mocks.cjs').lineChecks.length - lineBefore;
+const settingsOk = got.sheetUrl === 'https://docs.google.com/spreadsheets/d/MOCK-SHEET-ID/edit' && publicOnly.indexOf('sheetUrl') < 0 &&
+  lineReal.ok && lineReal.data.warnings.length === 0 && lineFake.ok && lineFake.data.warnings.length === 1 &&
+  lineFake.data.settings.lineOaId === '@jiratheepz' && lineFake.data.warnings[0].indexOf('user not found') > 0 &&
+  lineSame.ok && lineSame.data.warnings.length === 0 && checks === 2 && lineFake.data.settings.sheetUrl === got.sheetUrl;
+console.log((settingsOk ? 'PASS' : 'FAIL') + ' sheet URL (admin only) + LINE OA hint', JSON.stringify({ sheetUrl: !!got.sheetUrl, publicHasSheet: publicOnly.indexOf('sheetUrl') >= 0, real: lineReal.data && lineReal.data.warnings.length, fake: lineFake.data && lineFake.data.warnings.length, same: lineSame.data && lineSame.data.warnings.length, checks }));
+if (!settingsOk) process.exitCode = 1;

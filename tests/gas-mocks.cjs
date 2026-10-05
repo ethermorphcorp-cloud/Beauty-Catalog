@@ -52,6 +52,7 @@ class Sheet {
 const spreadsheet = {
   sheets: [new Sheet('Sheet1')],
   getName: () => 'Test Shop DB',
+  getUrl: () => 'https://docs.google.com/spreadsheets/d/MOCK-SHEET-ID/edit',
   getSheetByName(n) { return this.sheets.find((s) => s.name === n) || null; },
   insertSheet(n) { const s = new Sheet(n); this.sheets.push(s); return s; },
   getSheets() { return this.sheets.slice(); },
@@ -122,7 +123,18 @@ const Utilities = {
 };
 const Session = { getActiveUser: () => ({ getEmail: () => 'owner@example.com' }), getEffectiveUser: () => ({ getEmail: () => 'owner@example.com' }), getScriptTimeZone: () => 'Asia/Bangkok' };
 const syncCalls = [];
-const UrlFetchApp = { fetch: (url, opts) => { syncCalls.push({ url, body: JSON.parse(opts.payload) }); return { getResponseCode: () => 200, getContentText: () => '{}' }; } };
+const lineChecks = [];
+const UrlFetchApp = {
+  fetch: (url, opts) => {
+    // LINE OA page check: only @linedevelopers is a "real" Official Account in the mock.
+    if (url.indexOf('https://page.line.me/') === 0) {
+      lineChecks.push(url);
+      return { getResponseCode: () => (url.endsWith('/linedevelopers') ? 200 : 307), getContentText: () => '' };
+    }
+    syncCalls.push({ url, body: JSON.parse(opts.payload) });
+    return { getResponseCode: () => 200, getContentText: () => '{}' };
+  },
+};
 const ContentService = { MimeType: { JSON: 'json' }, createTextOutput: (t) => ({ text: t, setMimeType() { return this; } }) };
 const HtmlService = {};
 
@@ -138,4 +150,4 @@ function loadGas(gasDir) {
   return { context, run: (code) => vm.runInContext(code, context) };
 }
 
-module.exports = { loadGas, spreadsheet, store, syncCalls, driveItems };
+module.exports = { loadGas, spreadsheet, store, syncCalls, driveItems, lineChecks };
