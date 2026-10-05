@@ -1065,6 +1065,13 @@
           '<a class="btn btn-outline btn-lg" href="' + esc(s.sheetUrl) + '" target="_blank" rel="noopener" aria-label="เปิด Google Sheet (แท็บใหม่)">' + icon('external', 18) + '</a></div>' +
           '<p class="hint">แสดงอย่างเดียว · เปิดได้เฉพาะบัญชี Google ที่ได้รับสิทธิ์ในไฟล์นี้</p></div>'
         : '') +
+      (s.driveUrl
+        ? '<div class="field"><label for="set-drive">Google Drive (โฟลเดอร์รูปสินค้าของร้าน)</label>' +
+          '<div class="input-row"><input id="set-drive" class="input" type="url" readonly value="' + esc(s.driveUrl) + '">' +
+          '<button type="button" class="btn btn-outline btn-lg" data-action="copy-drive" aria-label="คัดลอกลิงก์โฟลเดอร์ Google Drive">' + icon('copy', 18) + '</button>' +
+          '<a class="btn btn-outline btn-lg" href="' + esc(s.driveUrl) + '" target="_blank" rel="noopener" aria-label="เปิดโฟลเดอร์ Google Drive (แท็บใหม่)">' + icon('external', 18) + '</a></div>' +
+          '<p class="hint">แสดงอย่างเดียว · โฟลเดอร์หลักที่เก็บโฟลเดอร์รูปของสินค้าแต่ละรายการ เปิดได้เฉพาะบัญชี Google ที่ได้รับสิทธิ์</p></div>'
+        : '') +
       '<div class="sticky-actions"><button type="submit" class="btn btn-primary btn-block"><span>' + icon('check', 18) + 'บันทึกการตั้งค่าร้าน</span></button></div>' +
       '</form>';
   }
@@ -1343,6 +1350,8 @@
         return setWorkerEditing($('#set-worker').readOnly);
       case 'copy-sheet':
         return copyText(state.settings.sheetUrl || '').then((ok) => toast(ok ? 'คัดลอกลิงก์ Google Sheet แล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error'));
+      case 'copy-drive':
+        return copyText(state.settings.driveUrl || '').then((ok) => toast(ok ? 'คัดลอกลิงก์โฟลเดอร์ Google Drive แล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error'));
       case 'page':
         state.page = Number(el.getAttribute('data-page')) || 1;
         renderListItems();

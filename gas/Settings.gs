@@ -99,9 +99,13 @@ function cleanSettingsInput_(input) {
   return out;
 }
 
-/** Settings for the admin UI: stored values plus the Sheet's own URL (display only, never stored or sent to the Worker). */
+/** Settings for the admin UI: stored values plus the Sheet and Drive root folder URLs (display only, never stored or sent to the Worker). */
 function adminSettings_() {
-  return Object.assign(readSettings_(), { sheetUrl: SpreadsheetApp.getActiveSpreadsheet().getUrl() });
+  const rootId = props_().getProperty('ROOT_FOLDER_ID');
+  return Object.assign(readSettings_(), {
+    sheetUrl: SpreadsheetApp.getActiveSpreadsheet().getUrl(),
+    driveUrl: rootId ? 'https://drive.google.com/drive/folders/' + rootId : '',
+  });
 }
 
 /**

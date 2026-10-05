@@ -121,6 +121,7 @@ if (!urlOk) process.exitCode = 1;
 // Settings: Sheet URL is shown to the admin UI only; LINE OA IDs that are not Official Accounts get a hint.
 run(`withLock_(() => { const u = readUsers_(); u.push(newUser_('setowner', 'Set owner', 'admin', 'set-password-1')); writeUsers_(u); })`);
 const adminTok = run(`login('setowner', 'set-password-1')`).data.token;
+run(`props_().setProperty('ROOT_FOLDER_ID', 'MOCKROOTFOLDER01')`);
 const got = run(`getSettings('${adminTok}')`).data;
 const publicOnly = JSON.stringify(run('publicSettings_(readSettings_())'));
 const lineBefore = require('./gas-mocks.cjs').lineChecks.length;
@@ -129,6 +130,7 @@ const lineFake = run(`saveSettings('${adminTok}', { lineOaId: 'jiratheepz' })`);
 const lineSame = run(`saveSettings('${adminTok}', { lineOaId: '@jiratheepz', shopName: 'ชื่ออื่น' })`);
 const checks = require('./gas-mocks.cjs').lineChecks.length - lineBefore;
 const settingsOk = got.sheetUrl === 'https://docs.google.com/spreadsheets/d/MOCK-SHEET-ID/edit' && publicOnly.indexOf('sheetUrl') < 0 &&
+  got.driveUrl === 'https://drive.google.com/drive/folders/MOCKROOTFOLDER01' && publicOnly.indexOf('driveUrl') < 0 &&
   lineReal.ok && lineReal.data.warnings.length === 0 && lineFake.ok && lineFake.data.warnings.length === 1 &&
   lineFake.data.settings.lineOaId === '@jiratheepz' && lineFake.data.warnings[0].indexOf('user not found') > 0 &&
   lineSame.ok && lineSame.data.warnings.length === 0 && checks === 2 && lineFake.data.settings.sheetUrl === got.sheetUrl;
