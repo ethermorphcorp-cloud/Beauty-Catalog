@@ -1052,7 +1052,9 @@
       '<input id="set-color-hex" class="input" maxlength="7" value="' + esc(s.primaryColor) + '" spellcheck="false"></div>' +
       '<div class="preview-box"><span class="hint">ตัวอย่าง</span><span class="chip">หมวดหมู่</span><span class="btn btn-primary btn-block" aria-hidden="true">ทัก LINE</span></div></div>' +
       '<div class="field"><label for="set-worker">Worker URL (ลิงก์หน้าร้าน)</label><input id="set-worker" class="input" type="url" value="' + esc(s.workerUrl) + '" placeholder="https://xxx.workers.dev" spellcheck="false">' +
-      '<p class="hint">ใช้สร้างลิงก์สินค้าที่ส่งให้ลูกค้า</p></div>' +
+      '<p class="hint">ใช้สร้างลิงก์สินค้าที่ส่งให้ลูกค้า · การเปลี่ยนค่านี้ต้องยืนยันด้วยรหัสผ่าน</p>' +
+      '<div id="worker-warn" class="warn-note" role="status" hidden>' + icon('alert', 18) +
+      '<span>คุณกำลังเปลี่ยน Worker URL — ระบบจะส่งข้อมูลสินค้าและรหัสลับของระบบไปที่อยู่ใหม่ และจะขอรหัสผ่านก่อนบันทึก</span></div></div>' +
       '<div class="sticky-actions"><button type="submit" class="btn btn-primary btn-block"><span>' + icon('check', 18) + 'บันทึกการตั้งค่าร้าน</span></button></div>' +
       '</form>';
   }
@@ -1067,13 +1069,56 @@
     if (!values.shopName) return invalid('set-name', 'กรุณากรอกชื่อร้าน');
     if (!/^#[0-9a-f]{6}$/i.test(values.primaryColor)) return invalid('set-color-hex', 'สีหลักต้องเป็นรหัสสี เช่น #1F5FAE');
     if (values.workerUrl && !/^https:\/\//i.test(values.workerUrl)) return invalid('set-worker', 'Worker URL ต้องขึ้นต้นด้วย https://');
-    await busy(form.querySelector('[type=submit]'), async () => {
-      const data = await call('saveSettings', values);
+    const btn = form.querySelector('[type=submit]');
+    const save = async (password) => {
+      const data = await call('saveSettings', values, password);
       state.settings = data.settings;
       applyTheme(state.settings.primaryColor);
       renderChrome();
+      const warn = $('#worker-warn');
+      if (warn) warn.hidden = true; // the saved URL is now the baseline
       report(data, 'บันทึกการตั้งค่าร้านแล้ว');
-    });
+    };
+    if (normUrl(values.workerUrl) === normUrl(state.settings.workerUrl)) {
+      await busy(btn, () => save());
+      return;
+    }
+
+    // Worker URL changed: warn, then ask for the user's password (checked again on the server).
+    const warning = 'เปลี่ยนจาก\n' + (state.settings.workerUrl || '(ยังไม่ได้ตั้ง)') + '\nเป็น\n' + (values.workerUrl || '(ว่าง)') + '\n\n' +
+      '⚠ ระบบจะส่งข้อมูลสินค้าพร้อมรหัสลับของระบบ (API_SECRET) ไปยังที่อยู่ใหม่นี้ และลิงก์ที่คัดลอกต่อจากนี้จะใช้ที่อยู่ใหม่ ' +
+      'ถ้าใส่ผิดหรือไม่ใช่ Worker ของร้านนี้ ข้อมูลอาจรั่วไหลหรือหน้าร้านจะไม่อัปเดต';
+    let note = '';
+    for (;;) {
+      const answer = await modal({
+        title: 'ยืนยันการเปลี่ยน Worker URL',
+        body: note + warning,
+        confirmText: 'ยืนยันและบันทึก',
+        danger: true,
+        fields: [{ id: 'password', label: 'ใส่รหัสผ่านของคุณเพื่อยืนยัน', type: 'password' }],
+      });
+      if (!answer) return;
+      if (!answer.password) {
+        note = 'กรุณาใส่รหัสผ่าน\n\n';
+        continue;
+      }
+      let retry = false;
+      await busy(btn, async () => {
+        try {
+          await save(answer.password);
+        } catch (err) {
+          if (err.code !== 'bad_password') throw err;
+          retry = true;
+        }
+      });
+      if (!retry) return;
+      note = 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่\n\n';
+    }
+  }
+
+  /** Same normalisation as the server: trimmed, no trailing slashes. */
+  function normUrl(u) {
+    return String(u || '').trim().replace(/\/+$/, '');
   }
 
   async function uploadLogo(file) {
@@ -1348,6 +1393,9 @@
       state.q = t.value;
       state.page = 1;
       renderListItems();
+    } else if (t.id === 'set-worker') {
+      const warn = $('#worker-warn');
+      if (warn) warn.hidden = normUrl(t.value) === normUrl(state.settings.workerUrl);
     } else if (t.id === 'set-color') {
       $('#set-color-hex').value = t.value.toUpperCase();
       applyTheme(t.value);

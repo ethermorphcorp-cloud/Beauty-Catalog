@@ -183,6 +183,29 @@ function changeMyPassword(token, oldPassword, newPassword) {
   });
 }
 
+/**
+ * Re-checks the signed-in user's password before a sensitive change. Failures share the login lockout
+ * counter, so a stolen session cannot be used to guess the password. Throws a Thai user error.
+ */
+function confirmPassword_(user, password, field) {
+  const cache = CacheService.getScriptCache();
+  const failKey = 'fail:' + user.username;
+  const fails = Number(cache.get(failKey) || 0);
+  if (fails >= LOGIN_MAX_FAILS) {
+    throw userError_('ใส่รหัสผ่านผิดหลายครั้ง ระบบล็อกชั่วคราว กรุณาลองใหม่ใน 15 นาที', 'locked');
+  }
+  if (typeof password !== 'string' || !password) {
+    throw userError_('การเปลี่ยนค่านี้ต้องยืนยันด้วยรหัสผ่านของคุณ', 'confirm_required');
+  }
+  const fresh = findUser_(readUsers_(), user.username);
+  if (!fresh || !passwordMatches_(fresh, password)) {
+    cache.put(failKey, String(fails + 1), LOGIN_LOCK_SECONDS);
+    withLock_(() => audit_(user.username, 'confirmFailed', { field }));
+    throw userError_('รหัสผ่านไม่ถูกต้อง', 'bad_password');
+  }
+  cache.remove(failKey);
+}
+
 // ---------- user management (admin only) ----------
 
 function listUsers(token) {

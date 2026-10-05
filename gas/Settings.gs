@@ -106,10 +106,17 @@ function getSettings(token) {
   });
 }
 
-function saveSettings(token, input) {
+/**
+ * Saves shop settings. Changing workerUrl needs confirmPassword (the user's own password): sync sends
+ * API_SECRET to that address, so a hijacked session must not be able to repoint it silently.
+ */
+function saveSettings(token, input, confirmPassword) {
   return respond_(() => {
     const user = requireUser_(token);
     const values = cleanSettingsInput_(input);
+    if ('workerUrl' in values && values.workerUrl !== readSettings_().workerUrl) {
+      confirmPassword_(user, confirmPassword, 'workerUrl');
+    }
     const entries = withLock_(() => {
       const changed = writeSettings_(values);
       auditMany_(user.username, 'saveSettings', changed);

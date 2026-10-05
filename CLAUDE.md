@@ -144,7 +144,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - ค่าเริ่มต้นต่อร้านอยู่ใน `shops.json` → `defaults` (ตอนนี้ `primaryColor`, `workerUrl`) ถูก compile เป็น `gas/ShopDefaults.gs` ตอน push และเขียนลงแท็บ Settings ให้เฉพาะ key ที่ยังว่าง (ตอน setup / login / Worker ขอ settings) ไม่ทับค่าที่ผู้ใช้บันทึกเอง — แก้ค่าทีหลังให้ทำในหน้า admin
 
 **แท็บ `AuditLog`** (append อย่างเดียว): `timestamp | user | action | productId | code | field | before | after`
-- action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`, `removeDemo`
+- action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`, `removeDemo`, `rotateApiSecret`, `confirmFailed` (ยืนยันรหัสผ่านผิดตอนแก้ค่าสำคัญ)
 - `updateProduct` / `saveSettings` บันทึก 1 แถวต่อฟิลด์ที่ค่าเปลี่ยนจริง; ค่า before/after ยาวเกิน 500 ตัวอักษรให้ตัด
 
 **แท็บ `Users`** (แสดงผลอย่างเดียว ผู้ใช้ขอเพิ่ม 2026-10-03): `username | displayName | role | createdAt | lastLoginAt` — เขียนใหม่ทั้งแท็บจาก `USERS` ทุกครั้งที่ผู้ใช้เปลี่ยน (สร้าง/ลบ/ตั้งรหัส/login) ไม่มี salt/hash, ป้องกันแบบเตือน (warning-only) แก้ในแท็บนี้จะถูกเขียนทับ — จัดการผู้ใช้ที่ admin › ตั้งค่า › ผู้ใช้งาน
@@ -174,7 +174,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - `uploadImage(token, productId, { name, mimeType, base64 })`, `listImages(token, productId)`, `removeImage(token, productId, fileId)` (ย้ายไปถังขยะของ Drive)
 - `linkFolder(token, productId, folderUrl)`
 - `getCategories(token)` → `[{ name, count }]`, `addCategory(token, name)`, `renameCategory(token, oldName, newName)` (อัปเดตสินค้าในหมวด + sync), `deleteCategory(token, name)` (เฉพาะ count = 0)
-- `getSettings(token)`, `saveSettings(token, settings)`, `uploadLogo(token, file)`
+- `getSettings(token)`, `saveSettings(token, settings, confirmPassword)`, `uploadLogo(token, file)` — **การเปลี่ยน `workerUrl` ต้องส่ง `confirmPassword` (รหัสผ่านของผู้ใช้เอง) และ server ตรวจเสมอ** (sync ส่ง `API_SECRET` ไปที่ URL นี้ จึงห้ามให้ session ที่หลุดเปลี่ยนเงียบๆ) ใส่ผิดนับรวมกับตัวนับล็อกของ login (ครบ 5 ครั้งล็อก 15 นาที) ข้อผิดพลาด: `confirm_required` / `bad_password` / `locked`; UI แสดงคำเตือนทันทีที่แก้ช่อง และกล่องยืนยันรหัสผ่านก่อนบันทึก
 - `changeMyPassword(token, oldPassword, newPassword)` → `{ token }` ใหม่ (session อื่นของผู้ใช้นี้หลุด)
 - **[admin]** `listUsers(token)` (ไม่คืน salt/hash), `createUser(token, { username, displayName, role, password })`, `resetPassword(token, username, newPassword)`, `deleteUser(token, username)`
 

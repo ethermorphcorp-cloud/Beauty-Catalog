@@ -316,6 +316,11 @@ svg { flex-shrink: 0; }
 .color-row { display: flex; align-items: center; gap: 10px; }
 .color-row input[type="color"] { width: 48px; height: 48px; padding: 0; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; }
 .color-row .input { width: 140px; font-variant-numeric: tabular-nums; }
+.warn-note {
+  display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--warn-bg); color: var(--warn); font-size: 13px; line-height: 1.6;
+}
+.warn-note svg { margin-top: 3px; }
 .preview-box { border: 1px dashed var(--border-strong); border-radius: 12px; padding: 12px; background: #EDEDF0; display: flex; flex-direction: column; gap: 10px; }
 .chip { align-self: flex-start; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 999px; background: var(--primary-tint); color: var(--accent-text); }
 .list-rows { display: flex; flex-direction: column; }

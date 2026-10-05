@@ -95,3 +95,25 @@ const rotateOk = newSecret !== oldSecret && newSecret.length >= 32 && viaOld.err
   auditText.indexOf('rotateApiSecret') >= 0 && auditText.indexOf(newSecret) < 0 && auditText.indexOf(oldSecret) < 0;
 console.log((rotateOk ? 'PASS' : 'FAIL') + ' API_SECRET rotation (old refused, new accepted, not logged)');
 if (!rotateOk) process.exitCode = 1;
+
+// Changing the Worker URL needs the user's own password (checked on the server).
+run(`withLock_(() => { const u = readUsers_(); u.push(newUser_('urlowner', 'URL owner', 'admin', 'url-password-1')); writeUsers_(u); })`);
+const urlTok = run(`login('urlowner', 'url-password-1')`).data.token;
+const urlSave = (extra, pw) => run(`saveSettings('${urlTok}', ${JSON.stringify(extra)}${pw === undefined ? '' : ", '" + pw + "'"})`);
+const sameUrl = run('readSettings_()').workerUrl;
+const r1 = urlSave({ shopName: 'ชื่อใหม่', workerUrl: sameUrl });                     // unchanged URL → no password
+const r2 = urlSave({ workerUrl: 'https://evil.example.com' });                          // changed, no password
+const r3 = urlSave({ workerUrl: 'https://evil.example.com' }, 'wrong-password');        // changed, wrong password
+const stillOld = run('readSettings_()').workerUrl === sameUrl;
+const r4 = urlSave({ workerUrl: 'https://new.example.workers.dev/' }, 'url-password-1'); // changed, right password (trailing slash normalised)
+const r5 = urlSave({ shopName: 'ไม่แตะ URL' });                                         // other fields only
+const afterNew = run('readSettings_()').workerUrl;
+const confirmAudit = JSON.stringify(spreadsheet.getSheetByName('AuditLog').data);
+// 5 wrong confirmations share the login counter → locked, even with the right password
+for (let i = 0; i < 5; i++) urlSave({ workerUrl: 'https://evil2.example.com' }, 'wrong-' + i); // a success above reset the counter
+const r6 = urlSave({ workerUrl: 'https://evil2.example.com' }, 'url-password-1');
+const urlOk = r1.ok && r2.code === 'confirm_required' && r3.code === 'bad_password' && stillOld && r4.ok &&
+  afterNew === 'https://new.example.workers.dev' && r5.ok && confirmAudit.indexOf('confirmFailed') >= 0 &&
+  confirmAudit.indexOf('url-password-1') < 0 && r6.code === 'locked';
+console.log((urlOk ? 'PASS' : 'FAIL') + ' Worker URL change needs password', JSON.stringify({ r1: r1.ok, r2: r2.code, r3: r3.code, stillOld, r4: r4.ok, afterNew, r5: r5.ok, r6: r6.code }));
+if (!urlOk) process.exitCode = 1;
