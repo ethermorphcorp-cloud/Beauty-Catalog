@@ -11,6 +11,7 @@ function onOpen() {
     .addSeparator()
     .addItem('เพิ่มข้อมูลตัวอย่าง', 'menuSeedDemo')
     .addItem('ลบข้อมูลตัวอย่าง', 'menuRemoveDemo')
+    .addItem('อัปเดตรูปปกทุกสินค้า', 'menuRefreshCovers')
     .addItem('ทดสอบระบบ', 'menuSelfTest')
     .addToUi();
 }
@@ -109,6 +110,19 @@ function ensureSheet_(ss, name, headers) {
   // Plain text everywhere so codes like 001 or dates are never re-interpreted by Sheets.
   sh.getRange(1, 1, sh.getMaxRows(), width).setNumberFormat('@');
   return sh;
+}
+
+/** Adds columns introduced after a shop was set up (e.g. coverPinned) on the first admin page load after an upgrade. */
+function ensureProductColumns_() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET.products);
+  if (!sh) return;
+  const headers = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(String);
+  if (PRODUCT_HEADERS.every((h) => headers.indexOf(h) >= 0)) return;
+  try {
+    withLock_(() => ensureSheet_(SpreadsheetApp.getActiveSpreadsheet(), SHEET.products, PRODUCT_HEADERS));
+  } catch (err) {
+    console.warn('Products columns not upgraded yet', err);
+  }
 }
 
 /** Deletes the untouched default tab (Sheet1 / แผ่น1) once our tabs exist. */

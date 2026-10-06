@@ -24,8 +24,27 @@ run(`uploadImage('${tok}', '${p.data.product.productId}', { name: 'a.jpg', mimeT
 const imgs = run(`listImages('${tok}', '${p.data.product.productId}')`);
 console.log('images sorted:', imgs.data.map((i) => i.name).join(','), '| upload ok:', up.ok);
 const prod = run(`getProduct('${tok}', '${p.data.product.productId}')`);
-console.log('cover is first image:', prod.data.product.coverFileId === imgs.data[0].id);
-const rm = run(`removeImage('${tok}', '${p.data.product.productId}', '${imgs.data[0].id}')`);
+const pid = p.data.product.productId;
+const idOf = (n) => imgs.data.find((i) => i.name === n).id;
+// Cover = latest upload by default (a.jpg is first by name, b.jpg was uploaded first, a.jpg last).
+const coverLatest = prod.data.product.coverFileId === idOf('a.jpg') && prod.data.product.coverPinned === false;
+const pinB = run(`setCover('${tok}', '${pid}', '${idOf('b.jpg')}')`);
+run(`uploadImage('${tok}', '${pid}', { name: 'c.jpg', mimeType: 'image/jpeg', base64: 'AAAA' })`);
+const afterUpload = run(`getProduct('${tok}', '${pid}')`).data.product;
+const pinOk = pinB.ok && pinB.data.coverFileId === idOf('b.jpg') && pinB.data.coverPinned === true && afterUpload.coverFileId === idOf('b.jpg') && afterUpload.coverPinned === true;
+const badPin = run(`setCover('${tok}', '${pid}', 'nope')`);
+const rmPinned = run(`removeImage('${tok}', '${pid}', '${idOf('b.jpg')}')`);
+const latestC = rmPinned.ok && rmPinned.data.coverPinned === false && rmPinned.data.images.some((i) => i.name === 'c.jpg') &&
+  rmPinned.data.coverFileId === rmPinned.data.images.find((i) => i.name === 'c.jpg').id;
+const reset = run(`setCover('${tok}', '${pid}', '${idOf('a.jpg')}')`);
+const auto = run(`setCover('${tok}', '${pid}', '')`);
+const resetOk = reset.ok && reset.data.coverPinned && auto.ok && !auto.data.coverPinned && auto.data.coverFileId === rmPinned.data.coverFileId;
+const syncImgs = require('./gas-mocks.cjs').syncCalls.filter((c) => c.body.type === 'product').pop().body.data.images;
+const workerClean = syncImgs.length > 0 && syncImgs.every((i) => Object.keys(i).sort().join() === 'id,name');
+const coverOk = coverLatest && pinOk && !badPin.ok && latestC && resetOk && workerClean;
+console.log((coverOk ? 'PASS' : 'FAIL') + ' cover = latest by default, pinnable, falls back, worker payload clean', JSON.stringify({ coverLatest, pinOk, badPin: badPin.ok, latestC, resetOk, workerClean }));
+if (!coverOk) process.exitCode = 1;
+const rm = run(`removeImage('${tok}', '${pid}', '${idOf('a.jpg')}')`);
 console.log('remove ok:', rm.ok, 'remaining:', rm.data.images.map((i) => i.name).join(','));
 const ren = run(`renameCategory('${tok}', 'หมวด 1', 'หมวดใหม่')`);
 console.log('rename category:', JSON.stringify(ren));

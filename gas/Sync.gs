@@ -25,6 +25,11 @@ function postToWorker_(body) {
 }
 
 /** The product as the Worker sees it. Hidden products carry no details. */
+/** Images as the Worker needs them (id + name only). */
+function workerImages_(images) {
+  return (images || []).map((i) => ({ id: i.id, name: i.name }));
+}
+
 function workerProduct_(rec) {
   if (rec.status !== 'active') return { productId: rec.productId, code: rec.code, status: 'hidden', updatedAt: rec.updatedAt };
   return {
@@ -42,7 +47,7 @@ function workerProduct_(rec) {
 function syncProduct_(rec, images, oldCodes) {
   return postToWorker_({
     type: 'product',
-    data: { product: workerProduct_(rec), images: rec.status === 'active' ? images || [] : [] },
+    data: { product: workerProduct_(rec), images: rec.status === 'active' ? workerImages_(images) : [] },
     oldCodes: oldCodes || [],
   });
 }

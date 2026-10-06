@@ -33,7 +33,7 @@ function createProductFolder_(productId) {
   return { id: folder.getId(), url: folder.getUrl(), warning: shareAnyone_(folder) };
 }
 
-/** Opens a user-supplied folder link, shares it, and reads its first image as the cover. */
+/** Opens a user-supplied folder link, shares it, and picks its cover (the latest image). */
 function linkExistingFolder_(folderUrl) {
   const id = parseFolderId_(folderUrl);
   if (!id) throw userError_('ลิงก์โฟลเดอร์ Google Drive ไม่ถูกต้อง');
@@ -45,10 +45,10 @@ function linkExistingFolder_(folderUrl) {
     throw userError_('เปิดโฟลเดอร์นี้ไม่ได้ ตรวจสอบว่าลิงก์ถูกต้องและบัญชีเจ้าของระบบมีสิทธิ์เข้าถึง');
   }
   const images = listFolderImages_(id);
-  return { id, url: folder.getUrl(), warning: shareAnyone_(folder), coverFileId: images.length ? images[0].id : '' };
+  return { id, url: folder.getUrl(), warning: shareAnyone_(folder), coverFileId: pickCover_({}, images).id };
 }
 
-/** Images in a folder sorted by file name (natural order); the first one is the cover. */
+/** Images in a folder sorted by file name (natural order). Each carries its creation time (ISO) for cover selection. */
 function listFolderImages_(folderId) {
   if (!folderId) return [];
   let folder;
@@ -62,7 +62,7 @@ function listFolderImages_(folderId) {
   const it = folder.getFiles();
   while (it.hasNext()) {
     const f = it.next();
-    if (!f.isTrashed() && String(f.getMimeType()).indexOf('image/') === 0) images.push({ id: f.getId(), name: f.getName() });
+    if (!f.isTrashed() && String(f.getMimeType()).indexOf('image/') === 0) images.push({ id: f.getId(), name: f.getName(), created: f.getDateCreated().toISOString() });
   }
   return images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 }
@@ -101,11 +101,33 @@ function imageBlob_(file) {
   return Utilities.newBlob(Utilities.base64Decode(b64), mimeType, cleanFileName_(f.name, mimeType));
 }
 
-/** Updates coverFileId when the first image changed. Returns true when the row was written. */
+/**
+ * The cover is the image the user pinned (setCover) while it still exists in the folder,
+ * otherwise the most recently created image. Ties go to the later file name.
+ */
+function pickCover_(rec, images) {
+  if (!images.length) return { id: '', pinned: false };
+  if (rec.coverPinned === '1' && images.some((i) => i.id === rec.coverFileId)) return { id: rec.coverFileId, pinned: true };
+  let latest = images[0];
+  images.forEach((i) => {
+    if (i.created >= latest.created) latest = i;
+  });
+  return { id: latest.id, pinned: false };
+}
+
+/** Sets rec.coverFileId / rec.coverPinned from the current images (the caller writes the row). */
+function applyCover_(rec, images) {
+  const cover = pickCover_(rec, images);
+  rec.coverFileId = cover.id;
+  rec.coverPinned = cover.pinned ? '1' : '';
+  return cover;
+}
+
+/** Updates the stored cover when it no longer matches the folder. Returns true when the row was written. */
 function refreshCover_(table, rec, images) {
-  const cover = images.length ? images[0].id : '';
-  if (rec.coverFileId === cover) return false;
-  rec.coverFileId = cover;
+  const cover = pickCover_(rec, images);
+  if (rec.coverFileId === cover.id && (rec.coverPinned === '1') === cover.pinned) return false;
+  applyCover_(rec, images);
   writeRecord_(table, rec);
   return true;
 }
@@ -125,13 +147,13 @@ function uploadImage(token, productId, file) {
       const images = listFolderImages_(rec.folderId);
       rec.updatedAt = nowIso_();
       rec.updatedBy = user.username;
-      rec.coverFileId = images.length ? images[0].id : '';
+      applyCover_(rec, images);
       writeRecord_(table, rec);
       audit_(user.username, 'uploadImage', { productId: rec.productId, code: rec.code, field: 'images', after: created.getName() });
       return { rec, images, warning };
     });
     const sync = syncProduct_(result.rec, result.images);
-    return { images: result.images, coverFileId: result.rec.coverFileId, warnings: result.warning ? [result.warning] : [], sync };
+    return { images: result.images, coverFileId: result.rec.coverFileId, coverPinned: result.rec.coverPinned === '1', warnings: result.warning ? [result.warning] : [], sync };
   });
 }
 
@@ -142,7 +164,7 @@ function listImages(token, productId) {
     const rec = findById_(table, productId);
     const images = listFolderImages_(rec.folderId);
     // Folders can change outside the app (linked folders), so keep the cover in step when we notice.
-    if (rec.coverFileId !== (images.length ? images[0].id : '')) {
+    if (rec.coverFileId !== pickCover_(rec, images).id) {
       withLock_(() => {
         const fresh = readProducts_();
         refreshCover_(fresh, findById_(fresh, productId), images);
@@ -174,14 +196,60 @@ function removeImage(token, productId, fileId) {
       const images = listFolderImages_(rec.folderId);
       rec.updatedAt = nowIso_();
       rec.updatedBy = user.username;
-      rec.coverFileId = images.length ? images[0].id : '';
+      applyCover_(rec, images); // removing the pinned cover falls back to the latest image
       writeRecord_(table, rec);
       audit_(user.username, 'removeImage', { productId: rec.productId, code: rec.code, field: 'images', before: name });
       return { rec, images };
     });
     const sync = syncProduct_(result.rec, result.images);
-    return { images: result.images, coverFileId: result.rec.coverFileId, sync };
+    return { images: result.images, coverFileId: result.rec.coverFileId, coverPinned: result.rec.coverPinned === '1', sync };
   });
+}
+
+/** Pins fileId as the product's cover; an empty fileId goes back to the automatic cover (latest image). */
+function setCover(token, productId, fileId) {
+  return respond_(() => {
+    const user = requireUser_(token);
+    const id = String(fileId || '');
+    return withLock_(() => {
+      const table = readProducts_();
+      const rec = findById_(table, productId);
+      const images = listFolderImages_(rec.folderId);
+      if (id && !images.some((i) => i.id === id)) throw userError_('ไม่พบรูปนี้ในโฟลเดอร์ของสินค้า กรุณารีเฟรช', 'not_found');
+      const before = rec.coverFileId;
+      rec.coverPinned = id ? '1' : '';
+      rec.coverFileId = id;
+      applyCover_(rec, images);
+      rec.updatedAt = nowIso_();
+      rec.updatedBy = user.username;
+      writeRecord_(table, rec);
+      const nameOf = (fid) => (images.find((i) => i.id === fid) || {}).name || '';
+      audit_(user.username, 'setCover', {
+        productId: rec.productId,
+        code: rec.code,
+        field: 'coverFileId',
+        before: nameOf(before),
+        after: id ? nameOf(id) : '(อัตโนมัติ: รูปล่าสุด)',
+      });
+      return { coverFileId: rec.coverFileId, coverPinned: rec.coverPinned === '1' };
+    });
+  });
+}
+
+/** Menu helper: recompute every product's cover from its folder (after an upgrade or folder edits outside the app). */
+function menuRefreshCovers() {
+  requireEditorContext_();
+  const ui = SpreadsheetApp.getUi();
+  const result = withLock_(() => {
+    const table = readProducts_();
+    let changed = 0;
+    table.records.forEach((rec) => {
+      if (!rec.folderId) return;
+      if (refreshCover_(table, rec, listFolderImages_(rec.folderId))) changed++;
+    });
+    return { total: table.records.length, changed };
+  });
+  ui.alert('อัปเดตรูปปกแล้ว', 'ตรวจ ' + result.total + ' สินค้า เปลี่ยนรูปปก ' + result.changed + ' รายการ', ui.ButtonSet.OK);
 }
 
 function linkFolder(token, productId, folderUrl) {
@@ -195,6 +263,7 @@ function linkFolder(token, productId, folderUrl) {
       rec.folderId = linked.id;
       rec.folderUrl = linked.url;
       rec.coverFileId = linked.coverFileId;
+      rec.coverPinned = ''; // a different folder starts with the automatic cover
       rec.updatedAt = nowIso_();
       rec.updatedBy = user.username;
       writeRecord_(table, rec);

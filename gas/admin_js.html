@@ -62,6 +62,7 @@
     logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l-5-5 5-5M5 12h11"></path>',
     download: '<path d="M12 4v11M7 10l5 5 5-5"></path><path d="M5 20h14"></path>',
     check: '<path d="M5 12l5 5 9-10"></path>',
+    star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9L12 16.9l-5.2 2.9 1-5.9-4.3-4.2 5.9-.8z"></path>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path>',
     alert: '<path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18h.01"></path>',
     folder: '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
@@ -649,7 +650,10 @@
     }
     if (progressEl()) progressEl().innerHTML = '';
     const p = findProduct(productId);
-    if (p && last) p.coverFileId = last.coverFileId;
+    if (p && last) {
+      p.coverFileId = last.coverFileId;
+      p.coverPinned = last.coverPinned;
+    }
     if (last) report(last, '');
     const okCount = files.length - failed;
     if (okCount) toast(failed ? 'อัปโหลดสำเร็จ ' + okCount + ' จาก ' + files.length + ' รูป' : 'อัปโหลด ' + okCount + ' รูปแล้ว', failed ? 'warn' : 'success');
@@ -797,11 +801,15 @@
     el.innerHTML =
       '<div class="section-head"><h3>รูปภาพ' + (images ? ' (' + images.length + ')' : '') + '</h3>' +
       (p.folderUrl ? '<a class="link" href="' + esc(p.folderUrl) + '" target="_blank" rel="noopener">' + icon('folder', 16) + 'เปิดโฟลเดอร์ใน Drive</a>' : '') + '</div>' +
-      '<p class="hint">เรียงตามชื่อไฟล์ · รูปแรกเป็นรูปปก</p>' +
+      '<p class="hint">เรียงตามชื่อไฟล์ · ' + (p.coverPinned
+        ? 'รูปปกที่คุณเลือกเอง <button type="button" class="link-btn" data-action="auto-cover">ใช้รูปล่าสุดอัตโนมัติ</button>'
+        : 'รูปปกคือรูปล่าสุดที่เพิ่มเข้ามา · กดดาวที่รูปเพื่อเลือกรูปปกเอง') + '</p>' +
       (images
         ? '<div class="img-grid">' + images.map((img, i) =>
-            '<figure class="img-tile"><img src="' + thumbUrl(img.id, 400) + '" alt="' + esc(img.name) + '" loading="lazy" data-fallback>' +
-            (i === 0 ? '<span class="cover-badge">ปก</span>' : '') +
+            '<figure class="img-tile' + (img.id === p.coverFileId ? ' is-cover' : '') + '"><img src="' + thumbUrl(img.id, 400) + '" alt="' + esc(img.name) + '" loading="lazy" data-fallback>' +
+            (img.id === p.coverFileId
+              ? '<span class="cover-badge">ปก</span>'
+              : '<button type="button" class="img-cover-btn" data-action="set-cover" data-file="' + esc(img.id) + '" aria-label="ตั้ง ' + esc(img.name) + ' เป็นรูปปก"><span>' + icon('star', 14) + '</span></button>') +
             '<button type="button" class="img-remove" data-action="remove-image" data-file="' + esc(img.id) + '" data-name="' + esc(img.name) + '" aria-label="ลบรูป ' + esc(img.name) + '"><span>' + icon('x', 14) + '</span></button></figure>'
           ).join('') +
           '<button type="button" class="img-add" data-action="pick-files" data-input="edit-files">' + icon('plus', 22) + '<span>เพิ่มรูป</span></button></div>'
@@ -856,7 +864,22 @@
       const data = await call('removeImage', p.productId, btn.getAttribute('data-file'));
       panel.images = data.images;
       p.coverFileId = data.coverFileId;
+      p.coverPinned = data.coverPinned;
       report(data, 'ลบรูปแล้ว');
+      renderPanelImages();
+      refreshProductViews();
+    });
+  }
+
+  /** Pins an image as the product cover; an empty fileId goes back to the automatic cover (latest image). */
+  async function setCover(btn, fileId) {
+    const p = panel && findProduct(panel.id);
+    if (!p) return;
+    await busy(btn, async () => {
+      const data = await call('setCover', p.productId, fileId);
+      p.coverFileId = data.coverFileId;
+      p.coverPinned = data.coverPinned;
+      toast(fileId ? 'ตั้งรูปปกแล้ว' : 'ใช้รูปล่าสุดเป็นรูปปกแล้ว', 'success');
       renderPanelImages();
       refreshProductViews();
     });
@@ -1368,6 +1391,8 @@
         return undefined;
       }
       case 'remove-image': return removeImage(el);
+      case 'set-cover': return setCover(el, el.getAttribute('data-file'));
+      case 'auto-cover': return setCover(el, '');
       case 'link-folder': return linkFolder(el);
       case 'csv-template': return downloadTemplate();
       case 'csv-import': return importCsv(el);

@@ -90,8 +90,9 @@ function makeFolder(name, parentId) {
 }
 function makeFile(name, mime, parentId) {
   const id = newId();
+  const created = new Date(1700000000000 + idSeq * 1000); // later files are always newer
   const f = {
-    id, name, mime, parentId, trashed: false, kind: 'file',
+    id, name, mime, parentId, trashed: false, kind: 'file', getDateCreated: () => created,
     getId: () => id, getName: () => name, getMimeType: () => mime, isTrashed: () => f.trashed,
     setTrashed: (t) => { f.trashed = t; }, setSharing() {},
     getParents: () => iter([driveItems[parentId]]),

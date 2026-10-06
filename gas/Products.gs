@@ -75,6 +75,7 @@ function publicProduct_(rec) {
     status: rec.status || 'active',
     oldCodes: splitCodes_(rec.oldCodes),
     coverFileId: rec.coverFileId,
+    coverPinned: rec.coverPinned === '1',
     createdAt: rec.createdAt,
     updatedAt: rec.updatedAt,
     updatedBy: rec.updatedBy,
@@ -121,7 +122,17 @@ function getProduct(token, productId) {
   return respond_(() => {
     requireUser_(token);
     const rec = findById_(readProducts_(), productId);
-    return { product: publicProduct_(rec), images: listFolderImages_(rec.folderId) };
+    const images = listFolderImages_(rec.folderId);
+    // Keep the stored cover in step with the folder (older rows, or images added outside the app).
+    if (rec.folderId && rec.coverFileId !== pickCover_(rec, images).id) {
+      withLock_(() => {
+        const fresh = readProducts_();
+        const cur = findById_(fresh, productId);
+        refreshCover_(fresh, cur, images);
+        Object.assign(rec, cur);
+      });
+    }
+    return { product: publicProduct_(rec), images };
   });
 }
 
