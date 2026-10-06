@@ -846,11 +846,8 @@
       const data = await call('updateProduct', p.productId, fields);
       Object.assign(p, data.product);
       report(data, 'บันทึก ' + p.code + ' แล้ว');
-      $('#panel-code').textContent = p.code;
-      if (fields.category !== undefined) {
-        await refreshCategories();
-        $('#edit-cat-wrap').outerHTML = categorySelectHtml('edit-cat', p.category);
-      }
+      if (fields.category !== undefined) await refreshCategories();
+      closePanel(); // saved: back to the list right away
       refreshProductViews();
     });
   }
