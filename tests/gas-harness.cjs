@@ -28,7 +28,12 @@ const pid = p.data.product.productId;
 const idOf = (n) => imgs.data.find((i) => i.name === n).id;
 // Cover = latest upload by default (a.jpg is first by name, b.jpg was uploaded first, a.jpg last).
 const coverLatest = prod.data.product.coverFileId === idOf('a.jpg') && prod.data.product.coverPinned === false;
+const lastProductSync = () => require('./gas-mocks.cjs').syncCalls.filter((c) => c.body.type === 'product').pop().body.data.images;
+const syncsBeforePin = require('./gas-mocks.cjs').syncCalls.length;
 const pinB = run(`setCover('${tok}', '${pid}', '${idOf('b.jpg')}')`);
+const lineFirstPinned = lastProductSync()[0].id === idOf('b.jpg') && lastProductSync().length === 2;
+const pinAgain = run(`setCover('${tok}', '${pid}', '${idOf('b.jpg')}')`);
+const noResync = pinAgain.ok && require('./gas-mocks.cjs').syncCalls.length === syncsBeforePin + 1;
 run(`uploadImage('${tok}', '${pid}', { name: 'c.jpg', mimeType: 'image/jpeg', base64: 'AAAA' })`);
 const afterUpload = run(`getProduct('${tok}', '${pid}')`).data.product;
 const pinOk = pinB.ok && pinB.data.coverFileId === idOf('b.jpg') && pinB.data.coverPinned === true && afterUpload.coverFileId === idOf('b.jpg') && afterUpload.coverPinned === true;
@@ -41,11 +46,38 @@ const auto = run(`setCover('${tok}', '${pid}', '')`);
 const resetOk = reset.ok && reset.data.coverPinned && auto.ok && !auto.data.coverPinned && auto.data.coverFileId === rmPinned.data.coverFileId;
 const syncImgs = require('./gas-mocks.cjs').syncCalls.filter((c) => c.body.type === 'product').pop().body.data.images;
 const workerClean = syncImgs.length > 0 && syncImgs.every((i) => Object.keys(i).sort().join() === 'id,name');
-const coverOk = coverLatest && pinOk && !badPin.ok && latestC && resetOk && workerClean;
-console.log((coverOk ? 'PASS' : 'FAIL') + ' cover = latest by default, pinnable, falls back, worker payload clean', JSON.stringify({ coverLatest, pinOk, badPin: badPin.ok, latestC, resetOk, workerClean }));
+const lineFirstAuto = lastProductSync()[0].id === auto.data.coverFileId;
+const coverOk = coverLatest && pinOk && !badPin.ok && latestC && resetOk && workerClean && lineFirstPinned && noResync && lineFirstAuto;
+console.log((coverOk ? 'PASS' : 'FAIL') + ' cover = latest by default, pinnable, falls back, worker payload clean', JSON.stringify({ coverLatest, pinOk, badPin: badPin.ok, latestC, resetOk, workerClean, lineFirstPinned, noResync, lineFirstAuto }));
 if (!coverOk) process.exitCode = 1;
 const rm = run(`removeImage('${tok}', '${pid}', '${idOf('a.jpg')}')`);
 console.log('remove ok:', rm.ok, 'remaining:', rm.data.images.map((i) => i.name).join(','));
+{
+  const mocks = require('./gas-mocks.cjs');
+  const own = run(`createProduct('${tok}', { code: 'DEL-1', name: 'ลบได้', category: 'หมวดลบ' })`).data.product;
+  run(`uploadImage('${tok}', '${own.productId}', { name: 'x.jpg', mimeType: 'image/jpeg', base64: 'AAAA' })`);
+  run(`updateProduct('${tok}', '${own.productId}', { code: 'DEL-1B' })`); // leaves DEL-1 as an old code
+  const ownFolderId = run(`getProduct('${tok}', '${own.productId}')`).data.product.folderId;
+  const ext = run(`createProduct('${tok}', { code: 'DEL-2', name: 'โฟลเดอร์เชื่อม' })`).data.product;
+  const extFolder = run(`rootFolder_().createFolder('โฟลเดอร์ของลูกค้า').getId()`);
+  run(`linkFolder('${tok}', '${ext.productId}', 'https://drive.google.com/drive/folders/${extFolder}')`);
+  const before = mocks.syncCalls.length;
+  const d1 = run(`deleteProduct('${tok}', '${own.productId}')`);
+  const syncDel = mocks.syncCalls.slice(before).map((c) => c.body).find((b) => b.type === 'delete');
+  const d2 = run(`deleteProduct('${tok}', '${ext.productId}')`);
+  const gone = run(`listProducts('${tok}')`).data.every((x) => x.productId !== own.productId && x.productId !== ext.productId);
+  const again = run(`deleteProduct('${tok}', '${own.productId}')`);
+  const noAuth = run(`deleteProduct('bad-token', '${ext.productId}')`);
+  const audits = run(`readTable_('AuditLog').records.filter((r) => r.action === 'deleteProduct').map((r) => r.code + ':' + r.after)`);
+  const fresh = run(`createProduct('${tok}', { code: 'DEL-1', name: 'ใช้รหัสเดิมได้' })`).data.product;
+  const delOk = d1.ok && d1.data.folderTrashed === true && mocks.driveItems[ownFolderId].trashed === true &&
+    d2.ok && d2.data.folderTrashed === false && d2.data.warnings.length === 1 && mocks.driveItems[extFolder].trashed === false &&
+    syncDel && syncDel.data.code === 'DEL-1B' && syncDel.oldCodes.join() === 'DEL-1' &&
+    gone && !again.ok && again.error.indexOf('ไม่พบ') >= 0 && !noAuth.ok && noAuth.code === 'auth' &&
+    audits.length === 2 && audits[0].indexOf('DEL-1B') === 0 && fresh.productId !== own.productId && fresh.productId !== ext.productId;
+  console.log((delOk ? 'PASS' : 'FAIL') + ' deleteProduct (row, own folder trashed, linked folder kept, worker purge, audit, id not reused)', JSON.stringify({ d1: d1.ok && d1.data.folderTrashed, d2: d2.ok && d2.data.folderTrashed, syncDel: !!syncDel, gone, again: again.ok, noAuth: noAuth.code, audits, ids: [own.productId, ext.productId, fresh.productId] }));
+  if (!delOk) process.exitCode = 1;
+}
 const ren = run(`renameCategory('${tok}', 'หมวด 1', 'หมวดใหม่')`);
 console.log('rename category:', JSON.stringify(ren));
 const set = run(`saveSettings('${tok}', { shopName: 'ร้านทดสอบ', lineOaId: 'myshop', primaryColor: '#1f5fae' })`);

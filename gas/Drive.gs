@@ -211,7 +211,7 @@ function setCover(token, productId, fileId) {
   return respond_(() => {
     const user = requireUser_(token);
     const id = String(fileId || '');
-    return withLock_(() => {
+    const result = withLock_(() => {
       const table = readProducts_();
       const rec = findById_(table, productId);
       const images = listFolderImages_(rec.folderId);
@@ -231,9 +231,30 @@ function setCover(token, productId, fileId) {
         before: nameOf(before),
         after: id ? nameOf(id) : '(อัตโนมัติ: รูปล่าสุด)',
       });
-      return { coverFileId: rec.coverFileId, coverPinned: rec.coverPinned === '1' };
+      return { rec, images, changed: rec.coverFileId !== before };
     });
+    // The cover is the first image on the customer page and the LINE preview, so the shop page must follow.
+    const sync = result.changed ? syncProduct_(result.rec, result.images) : { synced: false, skipped: true };
+    return { coverFileId: result.rec.coverFileId, coverPinned: result.rec.coverPinned === '1', sync };
   });
+}
+
+/** Trashes the product's Drive folder, but only when the system created it (named productId, directly inside the root folder). */
+function trashOwnFolder_(rec) {
+  if (!rec.folderId) return false;
+  try {
+    const rootId = props_().getProperty('ROOT_FOLDER_ID');
+    const folder = DriveApp.getFolderById(rec.folderId);
+    const parents = folder.getParents();
+    let inRoot = false;
+    while (parents.hasNext()) if (parents.next().getId() === rootId) inRoot = true;
+    if (!inRoot || folder.getName() !== rec.productId) return false;
+    folder.setTrashed(true);
+    return true;
+  } catch (err) {
+    console.warn('product folder not trashed', rec.productId, err);
+    return false;
+  }
 }
 
 /** Menu helper: recompute every product's cover from its folder (after an upgrade or folder edits outside the app). */

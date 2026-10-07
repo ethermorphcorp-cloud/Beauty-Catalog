@@ -25,9 +25,17 @@ function postToWorker_(body) {
 }
 
 /** The product as the Worker sees it. Hidden products carry no details. */
-/** Images as the Worker needs them (id + name only). */
-function workerImages_(images) {
-  return (images || []).map((i) => ({ id: i.id, name: i.name }));
+/** Images as the Worker needs them (id + name only) with the product's cover first: it becomes the LINE preview image. */
+function workerImages_(images, rec) {
+  const list = images || [];
+  const coverId = rec ? pickCover_(rec, list).id : '';
+  const ordered = coverId ? list.filter((i) => i.id === coverId).concat(list.filter((i) => i.id !== coverId)) : list;
+  return ordered.map((i) => ({ id: i.id, name: i.name }));
+}
+
+/** Tells the Worker to forget a deleted product (its code and any old codes that redirected to it). */
+function syncDeletedProduct_(rec) {
+  return postToWorker_({ type: 'delete', data: { code: rec.code }, oldCodes: splitCodes_(rec.oldCodes) });
 }
 
 function workerProduct_(rec) {
@@ -47,7 +55,7 @@ function workerProduct_(rec) {
 function syncProduct_(rec, images, oldCodes) {
   return postToWorker_({
     type: 'product',
-    data: { product: workerProduct_(rec), images: rec.status === 'active' ? workerImages_(images) : [] },
+    data: { product: workerProduct_(rec), images: rec.status === 'active' ? workerImages_(images, rec) : [] },
     oldCodes: oldCodes || [],
   });
 }

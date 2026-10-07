@@ -202,5 +202,14 @@ async function handleSync(request, env) {
     return json({ ok: true, writes: writes.length }, 200);
   }
 
+  if (body.type === 'delete' && body.data && CODE.test(body.data.code || '')) {
+    const keys = [body.data.code]
+      .concat(Array.isArray(body.oldCodes) ? body.oldCodes : [])
+      .filter((c) => CODE.test(c))
+      .map((c) => 'p:' + c.toLowerCase());
+    await Promise.all(keys.map((k) => env.CATALOG.delete(k)));
+    return json({ ok: true, deletes: keys.length }, 200);
+  }
+
   return json({ ok: false, error: 'bad_request' }, 400);
 }

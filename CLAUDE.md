@@ -49,14 +49,15 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
   - `productId` — ระบบสร้าง รูปแบบ `P` + เลข 6 หลัก (`P000001`) เรียงต่อจากค่ามากสุด **ห้ามแก้** ใช้เป็น key ภายในทุกที่ (API, AuditLog, ชื่อโฟลเดอร์รูป)
   - `code` (รหัสสินค้า) — ผู้ใช้กรอกและ**แก้ได้** ต้องไม่ซ้ำกับ `code` ปัจจุบันของสินค้าอื่น (เทียบแบบไม่สนตัวพิมพ์) ใช้ได้เฉพาะ `^[A-Za-z0-9_-]{1,40}$` เมื่อแก้ รหัสเดิมถูกเก็บใน `oldCodes` เพื่อ redirect ถ้ารหัสใหม่ไปตรงกับ `oldCodes` ของสินค้าอื่น ให้ลบออกจากสินค้านั้น (รหัสปัจจุบันชนะเสมอ)
 - **ฟิลด์สินค้า:** Product ID | รหัสสินค้า | ชื่อสินค้า | หมวดหมู่ | รายละเอียด | โฟลเดอร์รูป | สถานะ
-- **รูปภาพ:** สินค้าละหลายรูป เก็บในโฟลเดอร์ Drive ของสินค้านั้น เรียงตามชื่อไฟล์ รูปแรกเป็นรูปปก รับรูปได้ 2 ทาง
-  0. **รูปปก** (ใช้ในรายการสินค้าของ admin): ค่าเริ่มต้นคือ**รูปล่าสุด** (ใหม่สุดตามเวลาสร้างไฟล์ใน Drive, เท่ากันให้ชื่อไฟล์หลังสุด) ผู้ใช้เลือกเองได้ในหน้าแก้ไขสินค้า (กดดาวที่รูป → `setCover`) รูปที่เลือกเองถูกปักไว้ (`coverPinned`) อัปโหลดรูปใหม่ก็ไม่เปลี่ยน; ลบรูปปกที่ปักไว้ หรือเชื่อมโฟลเดอร์ใหม่ → กลับเป็นรูปล่าสุด; ปุ่ม "ใช้รูปล่าสุดอัตโนมัติ" ยกเลิกการปัก — **ไม่กระทบหน้าลูกค้า** (แกลเลอรีเรียงตามชื่อไฟล์ รูปแรกเป็นรูปแรก/OG image เหมือนเดิม)
+- **รูปภาพ:** สินค้าละหลายรูป เก็บในโฟลเดอร์ Drive ของสินค้านั้น เรียงตามชื่อไฟล์ **ยกเว้นรูปปกที่ถูกยกขึ้นเป็นรูปแรกเสมอ** (ดูข้อ 0) รับรูปได้ 2 ทาง
+  0. **รูปปก** (ใช้ในรายการสินค้าของ admin): ค่าเริ่มต้นคือ**รูปล่าสุด** (ใหม่สุดตามเวลาสร้างไฟล์ใน Drive, เท่ากันให้ชื่อไฟล์หลังสุด) ผู้ใช้เลือกเองได้ในหน้าแก้ไขสินค้า (กดดาวที่รูป → `setCover`) รูปที่เลือกเองถูกปักไว้ (`coverPinned`) อัปโหลดรูปใหม่ก็ไม่เปลี่ยน; ลบรูปปกที่ปักไว้ หรือเชื่อมโฟลเดอร์ใหม่ → กลับเป็นรูปล่าสุด; ปุ่ม "ใช้รูปล่าสุดอัตโนมัติ" ยกเลิกการปัก — **รูปปกเป็นรูปแรกบนหน้าลูกค้าด้วย** (แก้ 2026-10-07 ตามที่ผู้ใช้ขอ): `workerImages_` ใส่รูปปกไว้หน้าสุดของ `images` ที่ส่งให้ Worker จึงเป็นทั้งรูปแรกในแกลเลอรีและ `og:image` (พรีวิว LINE) ส่วนรูปที่เหลือเรียงตามชื่อไฟล์ — `setCover` จึงต้อง sync ไป Worker ด้วย (ถ้าไม่ได้เปลี่ยนรูปปกจริงจะไม่ sync)
   1. อัปโหลดผ่านแอป → ระบบสร้างโฟลเดอร์**ชื่อตาม `productId`** ใต้โฟลเดอร์หลักของร้าน (เปลี่ยนรหัสสินค้าแล้วไม่ต้องเปลี่ยนชื่อโฟลเดอร์)
   2. วางลิงก์โฟลเดอร์ Drive ที่มีอยู่แล้ว
 - **ย่อรูปฝั่งเบราว์เซอร์** ก่อนอัปโหลด: ด้านยาวไม่เกิน 1600px, JPEG quality 0.85, อัปโหลดทีละไฟล์
 - **Batch (ทั้งมือถือและจอใหญ่):** อัปโหลดไฟล์ CSV (UTF-8) คอลัมน์ `code,name,category,description,folder_url` โดย `folder_url` ไม่บังคับ ถ้าว่างระบบสร้างโฟลเดอร์เปล่าให้ ต้องแสดงตารางตัวอย่างพร้อมสถานะของแต่ละแถว (ใหม่ / รหัสซ้ำ / ข้อมูลไม่ครบ) ก่อนกดยืนยัน (บนมือถือแต่ละแถวแสดงเป็นการ์ด) — หน้า "นำเข้ารายการสินค้า (Bulk upload)"
 - **หมวดหมู่:** dropdown จากแท็บ `Categories` และพิมพ์หมวดใหม่ได้ (เพิ่มเข้าแท็บอัตโนมัติ) + จัดการในตั้งค่า › หมวดหมู่สินค้า: เพิ่ม / เปลี่ยนชื่อ (สินค้าในหมวดเปลี่ยนตาม) / ลบ (เฉพาะหมวดที่ไม่มีสินค้า) แสดงจำนวนสินค้าต่อหมวด
-- **เลิกขาย:** ใช้สถานะ `active` / `hidden` ไม่มีการลบสินค้า ลิงก์ของสินค้าที่ hidden แสดงข้อความ "สินค้านี้ไม่พร้อมจำหน่าย" สลับแสดง/ซ่อนได้**จากสวิตช์บนการ์ดในหน้ารายการสินค้า**โดยตรง (ทั้งมือถือและจอใหญ่) และในหน้าแก้ไข
+- **ลบสินค้า (เพิ่ม 2026-10-07 ตามที่ผู้ใช้ขอ):** ปุ่ม "ลบสินค้า" ท้ายหน้าแก้ไข (ทั้ง admin และ staff) มีกล่องยืนยัน ลบถาวร: ลบแถวใน Sheet (รายละเอียดเก็บไว้ใน AuditLog `deleteProduct`), ย้ายโฟลเดอร์รูปไปถังขยะของ Drive **เฉพาะโฟลเดอร์ที่ระบบสร้างเอง** (ชื่อ = productId อยู่ใต้โฟลเดอร์หลัก) โฟลเดอร์ที่ผู้ใช้เชื่อมจากภายนอกไม่ถูกแตะ (แจ้งเตือนในหน้าจอ), สั่ง Worker ลบ KV ของรหัสปัจจุบันและรหัสเก่า (ลิงก์ → 404) `productId` ไม่ถูกนำกลับมาใช้ซ้ำ รหัสสินค้าเดิมสร้างใหม่ได้ — ปกติให้ใช้ซ่อนแทนการลบ
+- **เลิกขาย:** ใช้สถานะ `active` / `hidden` (ถ้าไม่ต้องการลบ) ลิงก์ของสินค้าที่ hidden แสดงข้อความ "สินค้านี้ไม่พร้อมจำหน่าย" สลับแสดง/ซ่อนได้**จากสวิตช์บนการ์ดในหน้ารายการสินค้า**โดยตรง (ทั้งมือถือและจอใหญ่) และในหน้าแก้ไข
 - **หน้าสรุปรายการสินค้า:** stat card จำนวนทั้งหมด / แสดง (active) / ซ่อน (hidden) + การ์ดแยกตามหมวดหมู่ (จำนวน, แถบสัดส่วน, แสดง·ซ่อน) กดการ์ดหมวดแล้วเปิดรายการสินค้าที่กรองหมวดนั้น คำนวณฝั่ง client จาก `listProducts`
 - **AuditLog:** ทุกการเขียนข้อมูลบันทึกลงแท็บ `AuditLog` ใน Sheet (append อย่างเดียว ห้ามแก้/ลบแถวเดิม) หนึ่งแถวต่อหนึ่งฟิลด์ที่เปลี่ยน ห้ามบันทึกรหัสผ่านหรือ hash
 - **หน้าสินค้า:** แกลเลอรีรูป (ปัดได้บนมือถือ), ชื่อ, หมวด, รายละเอียด (ข้อความธรรมดา รักษาการขึ้นบรรทัด) และปุ่ม "ทัก LINE" ที่เปิด LINE OA พร้อมข้อความ `สนใจสินค้า {code} {name}`
@@ -146,7 +147,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - ค่าเริ่มต้นต่อร้านอยู่ใน `shops.json` → `defaults` (ตอนนี้ `primaryColor`, `workerUrl`) ถูก compile เป็น `gas/ShopDefaults.gs` ตอน push และเขียนลงแท็บ Settings ให้เฉพาะ key ที่ยังว่าง (ตอน setup / login / Worker ขอ settings) ไม่ทับค่าที่ผู้ใช้บันทึกเอง — แก้ค่าทีหลังให้ทำในหน้า admin
 
 **แท็บ `AuditLog`** (append อย่างเดียว): `timestamp | user | action | productId | code | field | before | after`
-- action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `setCover`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`, `removeDemo`, `rotateApiSecret`, `confirmFailed` (ยืนยันรหัสผ่านผิดตอนแก้ค่าสำคัญ)
+- action: `login`, `loginFailed`, `createProduct`, `updateProduct`, `setStatus`, `uploadImage`, `removeImage`, `setCover`, `deleteProduct`, `linkFolder`, `importCsv` (1 แถวสรุป), `addCategory`, `renameCategory`, `deleteCategory`, `saveSettings`, `uploadLogo`, `createUser`, `resetPassword`, `deleteUser`, `changePassword`, `removeDemo`, `rotateApiSecret`, `confirmFailed` (ยืนยันรหัสผ่านผิดตอนแก้ค่าสำคัญ)
 - `updateProduct` / `saveSettings` บันทึก 1 แถวต่อฟิลด์ที่ค่าเปลี่ยนจริง; ค่า before/after ยาวเกิน 500 ตัวอักษรให้ตัด
 
 **แท็บ `Users`** (แสดงผลอย่างเดียว ผู้ใช้ขอเพิ่ม 2026-10-03): `username | displayName | role | createdAt | lastLoginAt` — เขียนใหม่ทั้งแท็บจาก `USERS` ทุกครั้งที่ผู้ใช้เปลี่ยน (สร้าง/ลบ/ตั้งรหัส/login) ไม่มี salt/hash, ป้องกันแบบเตือน (warning-only) แก้ในแท็บนี้จะถูกเขียนทับ — จัดการผู้ใช้ที่ admin › ตั้งค่า › ผู้ใช้งาน
@@ -174,7 +175,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - `createProduct(token, product)` → สร้าง `productId`, `updateProduct(token, productId, fields)` (รวม `code`), `setStatus(token, productId, status)`
 - `previewCsv(token, rows)` → สถานะรายแถว / `importCsv(token, rows)` รับทีละไม่เกิน 50 แถว
 - `uploadImage(token, productId, { name, mimeType, base64 })`, `listImages(token, productId)`, `removeImage(token, productId, fileId)` (ย้ายไปถังขยะของ Drive)
-- `linkFolder(token, productId, folderUrl)`, `setCover(token, productId, fileId)` (`fileId` ว่าง = กลับเป็นรูปล่าสุดอัตโนมัติ)
+- `linkFolder(token, productId, folderUrl)`, `setCover(token, productId, fileId)` (`fileId` ว่าง = กลับเป็นรูปล่าสุดอัตโนมัติ; sync ไป Worker เมื่อรูปปกเปลี่ยน), `deleteProduct(token, productId)` → `{ productId, folderTrashed, warnings, sync }`
 - `getCategories(token)` → `[{ name, count }]`, `addCategory(token, name)`, `renameCategory(token, oldName, newName)` (อัปเดตสินค้าในหมวด + sync), `deleteCategory(token, name)` (เฉพาะ count = 0)
 - `getSettings(token)`, `saveSettings(token, settings, confirmPassword)`, `uploadLogo(token, file)` — **การเปลี่ยน `workerUrl` ต้องส่ง `confirmPassword` (รหัสผ่านของผู้ใช้เอง) และ server ตรวจเสมอ** (sync ส่ง `API_SECRET` ไปที่ URL นี้ จึงห้ามให้ session ที่หลุดเปลี่ยนเงียบๆ) ใส่ผิดนับรวมกับตัวนับล็อกของ login (ครบ 5 ครั้งล็อก 15 นาที) ข้อผิดพลาด: `confirm_required` / `bad_password` / `locked`; UI แสดงคำเตือนทันทีที่แก้ช่อง และกล่องยืนยันรหัสผ่านก่อนบันทึก
 - `changeMyPassword(token, oldPassword, newPassword)` → `{ token }` ใหม่ (session อื่นของผู้ใช้นี้หลุด)
@@ -196,7 +197,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 - `doGet` ของ GAS อ่าน HTTP header ไม่ได้ จึงต้องส่ง secret ทาง query string
 
 ### GAS → Worker (หลังบันทึก)
-`POST {workerUrl}/__sync` header `X-Api-Secret: {API_SECRET}` body `{ type: "product", data: { product, images }, oldCodes: [...] }` หรือ `{ type: "settings", data: {...} }`
+`POST {workerUrl}/__sync` header `X-Api-Secret: {API_SECRET}` body `{ type: "product", data: { product, images }, oldCodes: [...] }` (`images[0]` = รูปปก) หรือ `{ type: "settings", data: {...} }` หรือ `{ type: "delete", data: { code }, oldCodes: [...] }` (ลบ KV `p:` ของรหัสปัจจุบันและรหัสเก่าทั้งหมด)
 - เมื่อรหัสสินค้าเปลี่ยน Worker เขียน `p:{code ใหม่}` = ข้อมูลสินค้า และ `p:{code เก่า}` = `{ redirect: "<code ใหม่>" }`
 ถ้า sync ล้มเหลว ห้ามทำให้การบันทึกใน Sheet ล้มเหลว ให้แจ้งเตือนใน UI แทน
 **การ import CSV ไม่ต้อง sync** (KV free plan เขียนได้ 1,000 ครั้ง/วัน) ปล่อยให้ Worker ดึงเองเมื่อมีคนเปิดครั้งแรก
@@ -206,7 +207,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 |---|---|
 | `GET /p/{code}` | อ่าน KV `p:{code ตัวเล็ก}` + `settings` → ถ้าไม่มี ดึงจาก GAS แล้วเก็บ → render HTML; ถ้าค่าเป็น `{ redirect }` → HTTP 301 ไป `/p/{redirect}` |
 | `GET /img/{fileId}?w=1200&s={hmac}` | ตรวจ HMAC แล้ว proxy รูปจาก `https://drive.google.com/thumbnail?id={fileId}&sz=w{w}` แคชด้วย Cache API 30 วัน |
-| `POST /__sync` | ตรวจ `X-Api-Secret` แล้วเขียน KV |
+| `POST /__sync` | ตรวจ `X-Api-Secret` แล้วเขียน/ลบ KV (`product` / `settings` / `delete`) |
 | `GET /` | หน้าเรียบๆ แสดงชื่อร้าน |
 
 - หน้าสินค้าต้องมี `og:title`, `og:description` (ตัด 150 ตัวอักษร), `og:image` (URL เต็มของ `/img/...` ขนาด 1200), `og:url`, `og:type=product`

@@ -775,6 +775,8 @@
       '</form>' +
       '<section class="card"><div class="row-between"><div><strong>แสดงบนหน้าร้าน</strong><p class="hint">ถ้าปิด ลิงก์สินค้าจะขึ้นว่า “สินค้านี้ไม่พร้อมจำหน่าย”</p></div><div id="panel-status"></div></div></section>' +
       '<section class="card" id="panel-images"></section>' +
+      '<section class="card"><div class="row-between"><div><strong>ลบสินค้านี้</strong><p class="hint">ลบถาวร ลิงก์ที่ส่งให้ลูกค้าจะเปิดไม่ได้ ถ้าแค่หยุดขาย ให้ปิด “แสดงบนหน้าร้าน” แทน</p></div>' +
+      '<button type="button" class="btn btn-outline btn-lg btn-outline-danger" data-action="delete-product">' + icon('x', 18) + '<span>ลบสินค้า</span></button></div></section>' +
       '</div>' +
       '<footer class="panel-footer">' +
       '<button type="button" class="btn btn-outline btn-lg" data-action="copy" data-id="' + esc(p.productId) + '">' + icon('copy', 18) + 'คัดลอกลิงก์</button>' +
@@ -852,6 +854,26 @@
     });
   }
 
+  async function deleteProduct(btn) {
+    const p = panel && findProduct(panel.id);
+    if (!p) return;
+    const ok = await confirmDialog(
+      'ลบสินค้านี้?',
+      p.code + ' · ' + p.name + '\nลิงก์ที่ส่งให้ลูกค้าแล้วจะเปิดไม่ได้อีก และโฟลเดอร์รูปที่ระบบสร้างจะถูกย้ายไปถังขยะของ Google Drive\nถ้าแค่หยุดขายชั่วคราว ให้ปิด “แสดงบนหน้าร้าน” แทน',
+      'ลบสินค้า',
+      true
+    );
+    if (!ok) return;
+    await busy(btn, async () => {
+      const data = await call('deleteProduct', p.productId);
+      state.products = state.products.filter((x) => x.productId !== data.productId);
+      report(data, 'ลบสินค้า ' + p.code + ' แล้ว');
+      closePanel();
+      refreshCategories();
+      refreshProductViews();
+    });
+  }
+
   async function removeImage(btn) {
     const p = panel && findProduct(panel.id);
     if (!p) return;
@@ -876,7 +898,7 @@
       const data = await call('setCover', p.productId, fileId);
       p.coverFileId = data.coverFileId;
       p.coverPinned = data.coverPinned;
-      toast(fileId ? 'ตั้งรูปปกแล้ว' : 'ใช้รูปล่าสุดเป็นรูปปกแล้ว', 'success');
+      report(data, fileId ? 'ตั้งรูปปกแล้ว' : 'ใช้รูปล่าสุดเป็นรูปปกแล้ว');
       renderPanelImages();
       refreshProductViews();
     });
@@ -1388,6 +1410,7 @@
         return undefined;
       }
       case 'remove-image': return removeImage(el);
+      case 'delete-product': return deleteProduct(el);
       case 'set-cover': return setCover(el, el.getAttribute('data-file'));
       case 'auto-cover': return setCover(el, '');
       case 'link-folder': return linkFolder(el);
