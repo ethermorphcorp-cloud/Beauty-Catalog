@@ -239,6 +239,42 @@ function setCover(token, productId, fileId) {
   });
 }
 
+const SHARE_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
+ * The product cover as an image file for sharing from the admin as a photo (Messenger's encrypted chats show no
+ * link previews, but photos always show). Uses Drive's 1200 px thumbnail (small, EXIF-rotated) and falls back to
+ * the original file when the thumbnail cannot be fetched.
+ */
+function getShareImage(token, productId) {
+  return respond_(() => {
+    requireUser_(token);
+    const rec = findById_(readProducts_(), productId);
+    const cover = pickCover_(rec, listFolderImages_(rec.folderId));
+    if (!cover.id) throw userError_('สินค้านี้ยังไม่มีรูป กรุณาเพิ่มรูปก่อนแชร์');
+    const blob = shareImageBlob_(cover.id);
+    const mimeType = String(blob.getContentType() || 'image/jpeg');
+    const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+    return { name: rec.code + '.' + ext, mimeType, base64: Utilities.base64Encode(blob.getBytes()) };
+  });
+}
+
+function shareImageBlob_(fileId) {
+  try {
+    const res = UrlFetchApp.fetch('https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w1200', {
+      muteHttpExceptions: true,
+      followRedirects: true,
+    });
+    const blob = res.getResponseCode() === 200 ? res.getBlob() : null;
+    if (blob && String(blob.getContentType()).indexOf('image/') === 0) return blob;
+  } catch (err) {
+    console.warn('share thumbnail failed, using the original file', fileId, err);
+  }
+  const file = DriveApp.getFileById(fileId);
+  if (file.getSize() > SHARE_IMAGE_MAX_BYTES) throw userError_('รูปปกใหญ่เกินไปสำหรับแชร์ (เกิน 8 MB) กรุณาเลือกรูปปกอื่น');
+  return file.getBlob();
+}
+
 /** Trashes the product's Drive folder, but only when the system created it (named productId, directly inside the root folder). */
 function trashOwnFolder_(rec) {
   if (!rec.folderId) return false;

@@ -120,17 +120,25 @@ const Utilities = {
   computeDigest: (alg, text) => Array.from(crypto.createHash('sha256').update(text, 'utf8').digest()).map((b) => (b > 127 ? b - 256 : b)),
   formatDate: (d) => d.toISOString().replace('T', ' ').slice(0, 19),
   base64Decode: (s) => Array.from(Buffer.from(s, 'base64')),
-  newBlob: (bytes, type, name) => { let n = name; return { getName: () => n, setName: (x) => { n = x; }, getContentType: () => type }; },
+  base64Encode: (bytes) => Buffer.from(bytes.map((b) => (b < 0 ? b + 256 : b))).toString('base64'),
+  newBlob: (bytes, type, name) => { let n = name; return { getName: () => n, setName: (x) => { n = x; }, getContentType: () => type, getBytes: () => bytes || [] }; },
 };
 const Session = { getActiveUser: () => ({ getEmail: () => 'owner@example.com' }), getEffectiveUser: () => ({ getEmail: () => 'owner@example.com' }), getScriptTimeZone: () => 'Asia/Bangkok' };
 const syncCalls = [];
 const lineChecks = [];
+const thumbFetches = [];
 const UrlFetchApp = {
   fetch: (url, opts) => {
     // LINE OA page check: only @linedevelopers is a "real" Official Account in the mock.
     if (url.indexOf('https://page.line.me/') === 0) {
       lineChecks.push(url);
       return { getResponseCode: () => (url.endsWith('/linedevelopers') ? 200 : 307), getContentText: () => '' };
+    }
+    // Drive thumbnail (share image): a 1x1 PNG.
+    if (url.indexOf('https://drive.google.com/thumbnail?') === 0) {
+      thumbFetches.push(url);
+      const png = Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'));
+      return { getResponseCode: () => 200, getBlob: () => Utilities.newBlob(png, 'image/png', 'thumb.png') };
     }
     syncCalls.push({ url, body: JSON.parse(opts.payload) });
     return { getResponseCode: () => 200, getContentText: () => '{}' };
@@ -151,4 +159,4 @@ function loadGas(gasDir) {
   return { context, run: (code) => vm.runInContext(code, context) };
 }
 
-module.exports = { loadGas, spreadsheet, store, syncCalls, driveItems, lineChecks };
+module.exports = { loadGas, spreadsheet, store, syncCalls, driveItems, lineChecks, thumbFetches };

@@ -78,6 +78,19 @@ console.log('remove ok:', rm.ok, 'remaining:', rm.data.images.map((i) => i.name)
   console.log((delOk ? 'PASS' : 'FAIL') + ' deleteProduct (row, own folder trashed, linked folder kept, worker purge, audit, id not reused)', JSON.stringify({ d1: d1.ok && d1.data.folderTrashed, d2: d2.ok && d2.data.folderTrashed, syncDel: !!syncDel, gone, again: again.ok, noAuth: noAuth.code, audits, ids: [own.productId, ext.productId, fresh.productId] }));
   if (!delOk) process.exitCode = 1;
 }
+{
+  const share = run(`getShareImage('${tok}', '${pid}')`);
+  const empty = run(`createProduct('${tok}', { code: 'SHARE-0', name: 'ยังไม่มีรูป' })`).data.product;
+  const noImg = run(`getShareImage('${tok}', '${empty.productId}')`);
+  const noAuth = run(`getShareImage('bad-token', '${pid}')`);
+  const lastThumb = require('./gas-mocks.cjs').thumbFetches.slice(-1)[0] || '';
+  const coverNow = run(`getProduct('${tok}', '${pid}')`).data.product.coverFileId;
+  const shareOk = share.ok && share.data.mimeType === 'image/png' && share.data.name === 'A-1.png' && share.data.base64.length > 20 &&
+    lastThumb.indexOf('id=' + coverNow) > 0 && lastThumb.indexOf('sz=w1200') > 0 &&
+    !noImg.ok && noImg.error.indexOf('ยังไม่มีรูป') >= 0 && !noAuth.ok && noAuth.code === 'auth';
+  console.log((shareOk ? 'PASS' : 'FAIL') + ' getShareImage (cover thumbnail as a file, no-image and auth errors)', JSON.stringify({ ok: share.ok, name: share.data && share.data.name, type: share.data && share.data.mimeType, thumbIsCover: lastThumb.indexOf('id=' + coverNow) > 0, noImg: noImg.error, noAuth: noAuth.code }));
+  if (!shareOk) process.exitCode = 1;
+}
 const ren = run(`renameCategory('${tok}', 'หมวด 1', 'หมวดใหม่')`);
 console.log('rename category:', JSON.stringify(ren));
 const set = run(`saveSettings('${tok}', { shopName: 'ร้านทดสอบ', lineOaId: 'myshop', primaryColor: '#1f5fae' })`);

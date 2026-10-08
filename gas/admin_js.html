@@ -62,6 +62,7 @@
     logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l-5-5 5-5M5 12h11"></path>',
     download: '<path d="M12 4v11M7 10l5 5 5-5"></path><path d="M5 20h14"></path>',
     check: '<path d="M5 12l5 5 9-10"></path>',
+    share: '<circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"></path>',
     star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9L12 16.9l-5.2 2.9 1-5.9-4.3-4.2 5.9-.8z"></path>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path>',
     alert: '<path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18h.01"></path>',
@@ -467,6 +468,7 @@
       '<div class="pc-switch">' + switchHtml(p) + '</div>' +
       '<div class="pc-actions">' +
       '<button type="button" class="btn btn-outline" data-action="copy" data-id="' + esc(p.productId) + '" aria-label="คัดลอกลิงก์ ' + esc(p.code) + '">' + icon('copy', 18) + '<span class="btn-label">คัดลอกลิงก์</span></button>' +
+      '<button type="button" class="btn btn-outline" data-action="share" data-id="' + esc(p.productId) + '" aria-label="แชร์รูปและลิงก์ ' + esc(p.code) + '">' + icon('share', 18) + '<span class="btn-label">แชร์</span></button>' +
       '<button type="button" class="btn btn-outline" data-action="edit" data-id="' + esc(p.productId) + '" aria-label="แก้ไข ' + esc(p.code) + '">' + icon('edit', 18) + '<span class="btn-label">แก้ไข</span></button>' +
       '</div></article>';
   }
@@ -519,13 +521,105 @@
     return ok;
   }
 
+  /** "{name}\n{WORKER_URL}/p/{code}" — the text customers receive; '' when the Worker URL is not set. */
+  function linkText(p) {
+    const base = String(state.settings.workerUrl || '').replace(/\/+$/, '');
+    return base ? p.name + '\n' + base + '/p/' + encodeURIComponent(p.code) : '';
+  }
+
   async function copyLink(id) {
     const p = findProduct(id);
     if (!p) return;
-    const base = String(state.settings.workerUrl || '').replace(/\/+$/, '');
-    if (!base) return toast('ยังไม่ได้ตั้ง Worker URL (ตั้งค่า › ร้านค้า)', 'error');
-    const ok = await copyText(p.name + '\n' + base + '/p/' + encodeURIComponent(p.code));
+    const text = linkText(p);
+    if (!text) return toast('ยังไม่ได้ตั้ง Worker URL (ตั้งค่า › ร้านค้า)', 'error');
+    const ok = await copyText(text);
     toast(ok ? 'คัดลอกลิงก์แล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error');
+  }
+
+  // ---------- share the cover as a photo + text (works in Messenger's encrypted chats, which show no link previews) ----------
+  function base64ToFile(base64, name, type) {
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new File([bytes], name, { type });
+  }
+
+  async function shareProduct(id, btn) {
+    const p = findProduct(id);
+    if (!p) return;
+    const text = linkText(p);
+    if (!text) return toast('ยังไม่ได้ตั้ง Worker URL (ตั้งค่า › ร้านค้า)', 'error');
+    let data = null;
+    await busy(btn, async () => {
+      data = await call('getShareImage', p.productId);
+    });
+    if (!data) return;
+    const file = base64ToFile(data.base64, data.name, data.mimeType);
+    let canShareFile = false;
+    try {
+      canShareFile = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file], text }));
+    } catch (err) {
+      canShareFile = false;
+    }
+    openShareSheet(p, file, text, canShareFile);
+  }
+
+  /**
+   * The share sheet needs a fresh tap (browsers only open it straight from a user gesture), so the prepared photo
+   * is shown first with a "แชร์" button. Without file sharing (most desktops) the photo can be saved and the text copied.
+   */
+  function openShareSheet(p, file, text, canShareFile) {
+    const root = $('#modal-root');
+    const url = URL.createObjectURL(file);
+    const previous = document.activeElement;
+    root.innerHTML =
+      '<div class="scrim" data-share-close></div>' +
+      '<div class="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">' +
+      '<h2 id="share-title">แชร์ ' + esc(p.code) + '</h2>' +
+      '<img class="share-img" src="' + url + '" alt="รูปปก ' + esc(p.name) + '">' +
+      '<pre class="share-text">' + esc(text) + '</pre>' +
+      (canShareFile
+        ? '<p class="hint">กด “แชร์” แล้วเลือก Messenger หรือ LINE ระบบจะส่งรูปปกพร้อมชื่อและลิงก์ (บางแอปส่งเฉพาะรูป ให้วางข้อความที่คัดลอกไว้ต่อท้าย)</p>'
+        : '<p class="hint">เครื่องนี้แชร์รูปตรงไม่ได้ ให้กด “บันทึกรูป” แล้วแนบในแชท จากนั้นกด “คัดลอกข้อความ” แล้ววางต่อท้าย</p>') +
+      '<div class="share-actions">' +
+      (canShareFile ? '<button type="button" class="btn btn-primary btn-lg" data-share-go>' + icon('share', 18) + 'แชร์</button>' : '') +
+      '<a class="btn btn-outline btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>' +
+      '<button type="button" class="btn btn-outline btn-lg" data-share-copy>' + icon('copy', 18) + 'คัดลอกข้อความ</button>' +
+      '<button type="button" class="btn btn-ghost btn-lg" data-share-close>ปิด</button>' +
+      '</div></div>';
+    const close = () => {
+      root.innerHTML = '';
+      URL.revokeObjectURL(url);
+      document.removeEventListener('keydown', onKey, true);
+      if (previous && previous.focus) previous.focus();
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onKey, true);
+    root.querySelectorAll('[data-share-close]').forEach((el) => el.addEventListener('click', close));
+    root.querySelector('[data-share-copy]').addEventListener('click', async () => {
+      const ok = await copyText(text);
+      toast(ok ? 'คัดลอกข้อความแล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error');
+    });
+    const go = root.querySelector('[data-share-go]');
+    if (go) {
+      go.addEventListener('click', async () => {
+        try {
+          // Copy too: some apps (e.g. Messenger on Android) keep only the photo, so the text is ready to paste.
+          copyText(text);
+          await navigator.share({ files: [file], text });
+          toast('ส่งไปที่เมนูแชร์แล้ว', 'success');
+          close();
+        } catch (err) {
+          if (err && err.name === 'AbortError') return; // the user closed the share sheet
+          toast('แชร์ไม่สำเร็จ กรุณาใช้ “บันทึกรูป” และ “คัดลอกข้อความ” แทน', 'error');
+        }
+      });
+      go.focus();
+    } else {
+      root.querySelector('[data-share-save]').focus();
+    }
   }
 
   // ---------- summary ----------
@@ -778,8 +872,9 @@
       '<section class="card"><div class="row-between"><div><strong>ลบสินค้านี้</strong><p class="hint">ลบถาวร ลิงก์ที่ส่งให้ลูกค้าจะเปิดไม่ได้ ถ้าแค่หยุดขาย ให้ปิด “แสดงบนหน้าร้าน” แทน</p></div>' +
       '<button type="button" class="btn btn-outline btn-lg btn-outline-danger" data-action="delete-product">' + icon('x', 18) + '<span>ลบสินค้า</span></button></div></section>' +
       '</div>' +
-      '<footer class="panel-footer">' +
+      '<footer class="panel-footer has-share">' +
       '<button type="button" class="btn btn-outline btn-lg" data-action="copy" data-id="' + esc(p.productId) + '">' + icon('copy', 18) + 'คัดลอกลิงก์</button>' +
+      '<button type="button" class="btn btn-outline btn-lg" data-action="share" data-id="' + esc(p.productId) + '" aria-label="แชร์รูปและลิงก์">' + icon('share', 18) + 'แชร์</button>' +
       '<button type="submit" form="edit-form" class="btn btn-primary btn-lg"><span>' + icon('check', 18) + 'บันทึก</span></button>' +
       '</footer></aside>';
     renderPanelStatus();
@@ -1385,6 +1480,7 @@
       case 'logout': return logout();
       case 'toggle-status': return toggleStatus(id);
       case 'copy': return copyLink(id);
+      case 'share': return shareProduct(id, el);
       case 'edit': return openEdit(id);
       case 'add-product': return openAdd();
       case 'close-panel': return closePanel();
