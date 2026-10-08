@@ -219,6 +219,7 @@ Admin ─> GAS /exec (ชื่อผู้ใช้+รหัสผ่าน) �
 ### Worker env (`wrangler.jsonc`)
 หนึ่ง wrangler environment ต่อร้าน (`env.npbeauty`, `env.lemonbeauty`) แต่ละ env override `name` เป็นชื่อร้าน → Worker ชื่อ `npbeauty` / `lemonbeauty` ต้องใช้ `--env <shop>` ทุกครั้ง (ห้าม deploy แบบไม่ใส่ env)
 - `vars.GAS_URL` — URL `/exec` ของ GAS ของร้านนั้น (ไม่ใช่ความลับ, commit ได้)
+- `vars.FB_APP_ID` — (ไม่บังคับ, ไม่ใช่ความลับ) Facebook App ID เป็นตัวเลข ถ้าตั้งไว้ หน้าสินค้าจะมี `<meta property="fb:app_id">` (Sharing Debugger ของ Facebook เตือนว่า "missing fb:app_id" และ Messenger บางกรณีไม่แสดงรูปพรีวิวถ้าไม่มี) ค่าไม่ใช่ตัวเลข 5–20 หลักจะถูกข้าม ตั้งในแต่ละ env ของ `wrangler.jsonc` (ใช้ App ID เดียวกันได้ทุกร้าน)
 - secret `API_SECRET` — ตั้งผ่าน `npx wrangler secret put API_SECRET --env <shop>` หรือ dashboard (ห้าม commit) ค่าต้องตรงกับ Script Properties ของ GAS ร้านเดียวกัน
 - KV binding `CATALOG` — KV namespace แยกต่อร้าน (`catalog-npbeauty` = `ce19a061…`, `catalog-lemonbeauty` = `c1536310…`) ทุก key ตั้ง `expirationTtl` 3 วัน ถ้า sync พลาด ข้อมูลจะดึงใหม่จาก GAS เองภายใน 3 วัน
 - **Workers Caching** (`"cache": { "enabled": true }`) แคชตาม `Cache-Control`: หน้าสินค้า/404/410 = 60 วินาที, `/img` = 30 วัน, redirect 301 = 1 ชม., 503 และ `/__sync` = no-store (Cache API `caches.default` ใช้บน workers.dev ไม่ได้ จึงไม่ใช้)
