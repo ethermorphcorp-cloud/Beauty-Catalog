@@ -557,7 +557,7 @@
     const file = base64ToFile(data.base64, data.name, data.mimeType);
     let canShareFile = false;
     try {
-      canShareFile = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file], text }));
+      canShareFile = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
     } catch (err) {
       canShareFile = false;
     }
@@ -565,13 +565,17 @@
   }
 
   /**
-   * The share sheet needs a fresh tap (browsers only open it straight from a user gesture), so the prepared photo
-   * is shown first with a "แชร์" button. Without file sharing (most desktops) the photo can be saved and the text copied.
+   * Messenger keeps only the photo when a photo and text are shared together, so sharing is two steps:
+   * 1) the cover photo, 2) the name + link as text (same chat). Each step needs its own tap because browsers only
+   * open the share sheet straight from a user gesture. Without file sharing (most desktops) the photo can be saved
+   * and the text copied instead.
    */
   function openShareSheet(p, file, text, canShareFile) {
     const root = $('#modal-root');
     const url = URL.createObjectURL(file);
     const previous = document.activeElement;
+    const canShareText = !!navigator.share;
+    const done = { file: false, text: false };
     root.innerHTML =
       '<div class="scrim" data-share-close></div>' +
       '<div class="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">' +
@@ -579,12 +583,15 @@
       '<img class="share-img" src="' + url + '" alt="รูปปก ' + esc(p.name) + '">' +
       '<pre class="share-text">' + esc(text) + '</pre>' +
       (canShareFile
-        ? '<p class="hint">กด “แชร์” แล้วเลือก Messenger หรือ LINE ระบบจะส่งรูปปกพร้อมชื่อและลิงก์ (บางแอปส่งเฉพาะรูป ให้วางข้อความที่คัดลอกไว้ต่อท้าย)</p>'
+        ? '<p class="hint">Messenger ส่งรูปกับข้อความแยกกัน: กด <strong>1. แชร์รูป</strong> แล้วเลือกแชท จากนั้นกด <strong>2. แชร์ชื่อและลิงก์</strong> แล้วเลือกแชทเดิม</p>'
         : '<p class="hint">เครื่องนี้แชร์รูปตรงไม่ได้ ให้กด “บันทึกรูป” แล้วแนบในแชท จากนั้นกด “คัดลอกข้อความ” แล้ววางต่อท้าย</p>') +
       '<div class="share-actions">' +
-      (canShareFile ? '<button type="button" class="btn btn-primary btn-lg" data-share-go>' + icon('share', 18) + 'แชร์</button>' : '') +
-      '<a class="btn btn-outline btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>' +
+      (canShareFile
+        ? '<button type="button" class="btn btn-primary btn-lg" data-share-file>' + icon('share', 18) + '<span>1. แชร์รูป</span></button>' +
+          (canShareText ? '<button type="button" class="btn btn-outline btn-lg" data-share-text>' + icon('link', 18) + '<span>2. แชร์ชื่อและลิงก์</span></button>' : '')
+        : '<a class="btn btn-outline btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>') +
       '<button type="button" class="btn btn-outline btn-lg" data-share-copy>' + icon('copy', 18) + 'คัดลอกข้อความ</button>' +
+      (canShareFile ? '<a class="btn btn-ghost btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>' : '') +
       '<button type="button" class="btn btn-ghost btn-lg" data-share-close>ปิด</button>' +
       '</div></div>';
     const close = () => {
@@ -602,21 +609,42 @@
       const ok = await copyText(text);
       toast(ok ? 'คัดลอกข้อความแล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error');
     });
-    const go = root.querySelector('[data-share-go]');
-    if (go) {
-      go.addEventListener('click', async () => {
-        try {
-          // Copy too: some apps (e.g. Messenger on Android) keep only the photo, so the text is ready to paste.
-          copyText(text);
-          await navigator.share({ files: [file], text });
-          toast('ส่งไปที่เมนูแชร์แล้ว', 'success');
-          close();
-        } catch (err) {
-          if (err && err.name === 'AbortError') return; // the user closed the share sheet
-          toast('แชร์ไม่สำเร็จ กรุณาใช้ “บันทึกรูป” และ “คัดลอกข้อความ” แทน', 'error');
-        }
-      });
-      go.focus();
+    const fileBtn = root.querySelector('[data-share-file]');
+    const textBtn = root.querySelector('[data-share-text]');
+    /** Marks a step done; the other step becomes the primary button, and the sheet closes once both are sent. */
+    const finish = (step) => {
+      done[step] = true;
+      const btn = step === 'file' ? fileBtn : textBtn;
+      const next = step === 'file' ? textBtn : fileBtn;
+      if (btn) {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+        btn.querySelector('span').textContent = (step === 'file' ? '1. แชร์รูป' : '2. แชร์ชื่อและลิงก์') + ' ✓';
+      }
+      if (done.file && (done.text || !textBtn)) {
+        toast('แชร์รูปและลิงก์แล้ว', 'success');
+        return close();
+      }
+      if (next && !done[step === 'file' ? 'text' : 'file']) {
+        next.classList.remove('btn-outline');
+        next.classList.add('btn-primary');
+        next.focus();
+      }
+      toast(step === 'file' ? 'ส่งรูปแล้ว ต่อไปกด “2. แชร์ชื่อและลิงก์”' : 'ส่งลิงก์แล้ว ต่อไปกด “1. แชร์รูป”', 'success');
+    };
+    const shareStep = async (step, payload) => {
+      try {
+        await navigator.share(payload);
+        finish(step);
+      } catch (err) {
+        if (err && err.name === 'AbortError') return; // the user closed the share sheet
+        toast('แชร์ไม่สำเร็จ กรุณาใช้ “บันทึกรูป” และ “คัดลอกข้อความ” แทน', 'error');
+      }
+    };
+    if (fileBtn) {
+      fileBtn.addEventListener('click', () => shareStep('file', { files: [file] }));
+      if (textBtn) textBtn.addEventListener('click', () => shareStep('text', { text }));
+      fileBtn.focus();
     } else {
       root.querySelector('[data-share-save]').focus();
     }
