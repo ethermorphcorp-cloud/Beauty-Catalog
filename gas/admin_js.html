@@ -579,20 +579,20 @@
     root.innerHTML =
       '<div class="scrim" data-share-close></div>' +
       '<div class="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">' +
-      '<h2 id="share-title">แชร์ ' + esc(p.code) + '</h2>' +
+      '<div class="share-head"><h2 id="share-title">แชร์ ' + esc(p.code) + '</h2>' +
+      '<button type="button" class="icon-btn" data-share-close aria-label="ปิด">' + icon('x', 22) + '</button></div>' +
       '<img class="share-img" src="' + url + '" alt="รูปปก ' + esc(p.name) + '">' +
       '<pre class="share-text">' + esc(text) + '</pre>' +
       (canShareFile
-        ? '<p class="hint">Messenger ส่งรูปกับข้อความแยกกัน: กด <strong>1. แชร์รูป</strong> แล้วเลือกแชท จากนั้นกด <strong>2. แชร์ชื่อและลิงก์</strong> แล้วเลือกแชทเดิม</p>'
+        ? '<p class="hint">Messenger ส่งรูปกับข้อความแยกกัน: กด <strong>1. แชร์รูป</strong> แล้วเลือกแชท จากนั้นกด <strong>2. แชร์ลิงก์</strong> (ชื่อสินค้า + ลิงก์) แล้วเลือกแชทเดิม</p>'
         : '<p class="hint">เครื่องนี้แชร์รูปตรงไม่ได้ ให้กด “บันทึกรูป” แล้วแนบในแชท จากนั้นกด “คัดลอกข้อความ” แล้ววางต่อท้าย</p>') +
       '<div class="share-actions">' +
       (canShareFile
         ? '<button type="button" class="btn btn-primary btn-lg" data-share-file>' + icon('share', 18) + '<span>1. แชร์รูป</span></button>' +
-          (canShareText ? '<button type="button" class="btn btn-outline btn-lg" data-share-text>' + icon('link', 18) + '<span>2. แชร์ชื่อและลิงก์</span></button>' : '')
+          (canShareText ? '<button type="button" class="btn btn-outline btn-lg" data-share-text>' + icon('link', 18) + '<span>2. แชร์ลิงก์</span></button>' : '')
         : '<a class="btn btn-outline btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>') +
       '<button type="button" class="btn btn-outline btn-lg" data-share-copy>' + icon('copy', 18) + 'คัดลอกข้อความ</button>' +
-      (canShareFile ? '<a class="btn btn-ghost btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>' : '') +
-      '<button type="button" class="btn btn-ghost btn-lg" data-share-close>ปิด</button>' +
+      (canShareFile ? '<a class="btn btn-outline btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>' : '') +
       '</div></div>';
     const close = () => {
       root.innerHTML = '';
@@ -619,7 +619,7 @@
       if (btn) {
         btn.classList.remove('btn-primary');
         btn.classList.add('btn-outline');
-        btn.querySelector('span').textContent = (step === 'file' ? '1. แชร์รูป' : '2. แชร์ชื่อและลิงก์') + ' ✓';
+        btn.querySelector('span').textContent = (step === 'file' ? '1. แชร์รูป' : '2. แชร์ลิงก์') + ' ✓';
       }
       if (done.file && (done.text || !textBtn)) {
         toast('แชร์รูปและลิงก์แล้ว', 'success');
@@ -630,7 +630,7 @@
         next.classList.add('btn-primary');
         next.focus();
       }
-      toast(step === 'file' ? 'ส่งรูปแล้ว ต่อไปกด “2. แชร์ชื่อและลิงก์”' : 'ส่งลิงก์แล้ว ต่อไปกด “1. แชร์รูป”', 'success');
+      toast(step === 'file' ? 'ส่งรูปแล้ว ต่อไปกด “2. แชร์ลิงก์”' : 'ส่งลิงก์แล้ว ต่อไปกด “1. แชร์รูป”', 'success');
     };
     const shareStep = async (step, payload) => {
       try {
