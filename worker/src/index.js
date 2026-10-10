@@ -96,8 +96,6 @@ async function getSettings(env, ctx) {
 async function shopFor(env, ctx, url) {
   const settings = await getSettings(env, ctx);
   const shop = { ...settings };
-  // Optional Facebook App ID (wrangler var) → <meta property="fb:app_id">; numeric ids only.
-  if (/^\d{5,20}$/.test(String(env.FB_APP_ID || ''))) shop.fbAppId = String(env.FB_APP_ID);
   if (settings.logoFileId && FILE_ID.test(settings.logoFileId) && env.API_SECRET) {
     shop.logoSrc = await imagePath(env.API_SECRET, settings.logoFileId, 200);
     shop.logoOg = url.origin + (await imagePath(env.API_SECRET, settings.logoFileId, 1200));
@@ -202,15 +200,6 @@ async function handleSync(request, env) {
       });
     await Promise.all(writes);
     return json({ ok: true, writes: writes.length }, 200);
-  }
-
-  if (body.type === 'delete' && body.data && CODE.test(body.data.code || '')) {
-    const keys = [body.data.code]
-      .concat(Array.isArray(body.oldCodes) ? body.oldCodes : [])
-      .filter((c) => CODE.test(c))
-      .map((c) => 'p:' + c.toLowerCase());
-    await Promise.all(keys.map((k) => env.CATALOG.delete(k)));
-    return json({ ok: true, deletes: keys.length }, 200);
   }
 
   return json({ ok: false, error: 'bad_request' }, 400);

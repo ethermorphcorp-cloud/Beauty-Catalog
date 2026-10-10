@@ -11,7 +11,6 @@ function onOpen() {
     .addSeparator()
     .addItem('เพิ่มข้อมูลตัวอย่าง', 'menuSeedDemo')
     .addItem('ลบข้อมูลตัวอย่าง', 'menuRemoveDemo')
-    .addItem('อัปเดตรูปปกทุกสินค้า', 'menuRefreshCovers')
     .addItem('ทดสอบระบบ', 'menuSelfTest')
     .addToUi();
 }
@@ -35,22 +34,6 @@ function setup() {
 
   // Root folder for product images (one per shop; see shops.json → rootFolderId).
   let rootId = props.getProperty('ROOT_FOLDER_ID');
-  // A folder link typed into Settings → rootFolderUrl wins over the stored id (used when handing the shop to a new owner).
-  const wantedUrl = String(readSettings_().rootFolderUrl || '').trim();
-  const wantedId = parseFolderId_(wantedUrl);
-  if (wantedUrl && !wantedId) {
-    ui.alert('ลิงก์ในแท็บ Settings › rootFolderUrl ไม่ถูกต้อง แก้ไขแล้วรันตั้งค่าเริ่มต้นอีกครั้ง');
-    return;
-  }
-  if (wantedId && wantedId !== rootId) {
-    if (!folderOk_(wantedId)) {
-      ui.alert('เปิดโฟลเดอร์ใน Settings › rootFolderUrl ไม่ได้ ตรวจสอบลิงก์และสิทธิ์ของบัญชีนี้ แล้วรันตั้งค่าเริ่มต้นอีกครั้ง');
-      return;
-    }
-    rootId = wantedId;
-    props.setProperty('ROOT_FOLDER_ID', rootId);
-    notes.push('เปลี่ยนโฟลเดอร์หลักตาม Settings แล้ว (รูปในโฟลเดอร์เดิมไม่ถูกย้าย)');
-  }
   if (rootId && !folderOk_(rootId)) {
     notes.push('โฟลเดอร์หลักเดิมเปิดไม่ได้ ต้องตั้งใหม่');
     rootId = '';
@@ -80,8 +63,6 @@ function setup() {
   const root = DriveApp.getFolderById(rootId);
   const shareWarning = shareAnyone_(root);
   notes.push('โฟลเดอร์หลัก: ' + root.getName() + (shareWarning ? ' (⚠️ ' + shareWarning + ')' : ''));
-  // Keep the folder link visible in the Settings tab.
-  withLock_(() => auditMany_('system (setup)', 'saveSettings', writeSettings_({ rootFolderUrl: root.getUrl() })));
 
   if (!props.getProperty('API_SECRET')) {
     props.setProperty('API_SECRET', randomToken_());
@@ -110,19 +91,6 @@ function ensureSheet_(ss, name, headers) {
   // Plain text everywhere so codes like 001 or dates are never re-interpreted by Sheets.
   sh.getRange(1, 1, sh.getMaxRows(), width).setNumberFormat('@');
   return sh;
-}
-
-/** Adds columns introduced after a shop was set up (e.g. coverPinned) on the first admin page load after an upgrade. */
-function ensureProductColumns_() {
-  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET.products);
-  if (!sh) return;
-  const headers = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(String);
-  if (PRODUCT_HEADERS.every((h) => headers.indexOf(h) >= 0)) return;
-  try {
-    withLock_(() => ensureSheet_(SpreadsheetApp.getActiveSpreadsheet(), SHEET.products, PRODUCT_HEADERS));
-  } catch (err) {
-    console.warn('Products columns not upgraded yet', err);
-  }
 }
 
 /** Deletes the untouched default tab (Sheet1 / แผ่น1) once our tabs exist. */

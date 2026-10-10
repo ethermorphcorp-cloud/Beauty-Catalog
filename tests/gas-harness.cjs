@@ -24,73 +24,9 @@ run(`uploadImage('${tok}', '${p.data.product.productId}', { name: 'a.jpg', mimeT
 const imgs = run(`listImages('${tok}', '${p.data.product.productId}')`);
 console.log('images sorted:', imgs.data.map((i) => i.name).join(','), '| upload ok:', up.ok);
 const prod = run(`getProduct('${tok}', '${p.data.product.productId}')`);
-const pid = p.data.product.productId;
-const idOf = (n) => imgs.data.find((i) => i.name === n).id;
-// Cover = latest upload by default (a.jpg is first by name, b.jpg was uploaded first, a.jpg last).
-const coverLatest = prod.data.product.coverFileId === idOf('a.jpg') && prod.data.product.coverPinned === false;
-const lastProductSync = () => require('./gas-mocks.cjs').syncCalls.filter((c) => c.body.type === 'product').pop().body.data.images;
-const syncsBeforePin = require('./gas-mocks.cjs').syncCalls.length;
-const pinB = run(`setCover('${tok}', '${pid}', '${idOf('b.jpg')}')`);
-const lineFirstPinned = lastProductSync()[0].id === idOf('b.jpg') && lastProductSync().length === 2;
-const pinAgain = run(`setCover('${tok}', '${pid}', '${idOf('b.jpg')}')`);
-const noResync = pinAgain.ok && require('./gas-mocks.cjs').syncCalls.length === syncsBeforePin + 1;
-run(`uploadImage('${tok}', '${pid}', { name: 'c.jpg', mimeType: 'image/jpeg', base64: 'AAAA' })`);
-const afterUpload = run(`getProduct('${tok}', '${pid}')`).data.product;
-const pinOk = pinB.ok && pinB.data.coverFileId === idOf('b.jpg') && pinB.data.coverPinned === true && afterUpload.coverFileId === idOf('b.jpg') && afterUpload.coverPinned === true;
-const badPin = run(`setCover('${tok}', '${pid}', 'nope')`);
-const rmPinned = run(`removeImage('${tok}', '${pid}', '${idOf('b.jpg')}')`);
-const latestC = rmPinned.ok && rmPinned.data.coverPinned === false && rmPinned.data.images.some((i) => i.name === 'c.jpg') &&
-  rmPinned.data.coverFileId === rmPinned.data.images.find((i) => i.name === 'c.jpg').id;
-const reset = run(`setCover('${tok}', '${pid}', '${idOf('a.jpg')}')`);
-const auto = run(`setCover('${tok}', '${pid}', '')`);
-const resetOk = reset.ok && reset.data.coverPinned && auto.ok && !auto.data.coverPinned && auto.data.coverFileId === rmPinned.data.coverFileId;
-const syncImgs = require('./gas-mocks.cjs').syncCalls.filter((c) => c.body.type === 'product').pop().body.data.images;
-const workerClean = syncImgs.length > 0 && syncImgs.every((i) => Object.keys(i).sort().join() === 'id,name');
-const lineFirstAuto = lastProductSync()[0].id === auto.data.coverFileId;
-const coverOk = coverLatest && pinOk && !badPin.ok && latestC && resetOk && workerClean && lineFirstPinned && noResync && lineFirstAuto;
-console.log((coverOk ? 'PASS' : 'FAIL') + ' cover = latest by default, pinnable, falls back, worker payload clean', JSON.stringify({ coverLatest, pinOk, badPin: badPin.ok, latestC, resetOk, workerClean, lineFirstPinned, noResync, lineFirstAuto }));
-if (!coverOk) process.exitCode = 1;
-const rm = run(`removeImage('${tok}', '${pid}', '${idOf('a.jpg')}')`);
+console.log('cover is first image:', prod.data.product.coverFileId === imgs.data[0].id);
+const rm = run(`removeImage('${tok}', '${p.data.product.productId}', '${imgs.data[0].id}')`);
 console.log('remove ok:', rm.ok, 'remaining:', rm.data.images.map((i) => i.name).join(','));
-{
-  const mocks = require('./gas-mocks.cjs');
-  const own = run(`createProduct('${tok}', { code: 'DEL-1', name: 'ลบได้', category: 'หมวดลบ' })`).data.product;
-  run(`uploadImage('${tok}', '${own.productId}', { name: 'x.jpg', mimeType: 'image/jpeg', base64: 'AAAA' })`);
-  run(`updateProduct('${tok}', '${own.productId}', { code: 'DEL-1B' })`); // leaves DEL-1 as an old code
-  const ownFolderId = run(`getProduct('${tok}', '${own.productId}')`).data.product.folderId;
-  const ext = run(`createProduct('${tok}', { code: 'DEL-2', name: 'โฟลเดอร์เชื่อม' })`).data.product;
-  const extFolder = run(`rootFolder_().createFolder('โฟลเดอร์ของลูกค้า').getId()`);
-  run(`linkFolder('${tok}', '${ext.productId}', 'https://drive.google.com/drive/folders/${extFolder}')`);
-  const before = mocks.syncCalls.length;
-  const d1 = run(`deleteProduct('${tok}', '${own.productId}')`);
-  const syncDel = mocks.syncCalls.slice(before).map((c) => c.body).find((b) => b.type === 'delete');
-  const d2 = run(`deleteProduct('${tok}', '${ext.productId}')`);
-  const gone = run(`listProducts('${tok}')`).data.every((x) => x.productId !== own.productId && x.productId !== ext.productId);
-  const again = run(`deleteProduct('${tok}', '${own.productId}')`);
-  const noAuth = run(`deleteProduct('bad-token', '${ext.productId}')`);
-  const audits = run(`readTable_('AuditLog').records.filter((r) => r.action === 'deleteProduct').map((r) => r.code + ':' + r.after)`);
-  const fresh = run(`createProduct('${tok}', { code: 'DEL-1', name: 'ใช้รหัสเดิมได้' })`).data.product;
-  const delOk = d1.ok && d1.data.folderTrashed === true && mocks.driveItems[ownFolderId].trashed === true &&
-    d2.ok && d2.data.folderTrashed === false && d2.data.warnings.length === 1 && mocks.driveItems[extFolder].trashed === false &&
-    syncDel && syncDel.data.code === 'DEL-1B' && syncDel.oldCodes.join() === 'DEL-1' &&
-    gone && !again.ok && again.error.indexOf('ไม่พบ') >= 0 && !noAuth.ok && noAuth.code === 'auth' &&
-    audits.length === 2 && audits[0].indexOf('DEL-1B') === 0 && fresh.productId !== own.productId && fresh.productId !== ext.productId;
-  console.log((delOk ? 'PASS' : 'FAIL') + ' deleteProduct (row, own folder trashed, linked folder kept, worker purge, audit, id not reused)', JSON.stringify({ d1: d1.ok && d1.data.folderTrashed, d2: d2.ok && d2.data.folderTrashed, syncDel: !!syncDel, gone, again: again.ok, noAuth: noAuth.code, audits, ids: [own.productId, ext.productId, fresh.productId] }));
-  if (!delOk) process.exitCode = 1;
-}
-{
-  const share = run(`getShareImage('${tok}', '${pid}')`);
-  const empty = run(`createProduct('${tok}', { code: 'SHARE-0', name: 'ยังไม่มีรูป' })`).data.product;
-  const noImg = run(`getShareImage('${tok}', '${empty.productId}')`);
-  const noAuth = run(`getShareImage('bad-token', '${pid}')`);
-  const lastThumb = require('./gas-mocks.cjs').thumbFetches.slice(-1)[0] || '';
-  const coverNow = run(`getProduct('${tok}', '${pid}')`).data.product.coverFileId;
-  const shareOk = share.ok && share.data.mimeType === 'image/png' && share.data.name === 'A-1.png' && share.data.base64.length > 20 &&
-    lastThumb.indexOf('id=' + coverNow) > 0 && lastThumb.indexOf('sz=w1200') > 0 &&
-    !noImg.ok && noImg.error.indexOf('ยังไม่มีรูป') >= 0 && !noAuth.ok && noAuth.code === 'auth';
-  console.log((shareOk ? 'PASS' : 'FAIL') + ' getShareImage (cover thumbnail as a file, no-image and auth errors)', JSON.stringify({ ok: share.ok, name: share.data && share.data.name, type: share.data && share.data.mimeType, thumbIsCover: lastThumb.indexOf('id=' + coverNow) > 0, noImg: noImg.error, noAuth: noAuth.code }));
-  if (!shareOk) process.exitCode = 1;
-}
 const ren = run(`renameCategory('${tok}', 'หมวด 1', 'หมวดใหม่')`);
 console.log('rename category:', JSON.stringify(ren));
 const set = run(`saveSettings('${tok}', { shopName: 'ร้านทดสอบ', lineOaId: 'myshop', primaryColor: '#1f5fae' })`);
@@ -159,44 +95,3 @@ const rotateOk = newSecret !== oldSecret && newSecret.length >= 32 && viaOld.err
   auditText.indexOf('rotateApiSecret') >= 0 && auditText.indexOf(newSecret) < 0 && auditText.indexOf(oldSecret) < 0;
 console.log((rotateOk ? 'PASS' : 'FAIL') + ' API_SECRET rotation (old refused, new accepted, not logged)');
 if (!rotateOk) process.exitCode = 1;
-
-// Changing the Worker URL needs the user's own password (checked on the server).
-run(`withLock_(() => { const u = readUsers_(); u.push(newUser_('urlowner', 'URL owner', 'admin', 'url-password-1')); writeUsers_(u); })`);
-const urlTok = run(`login('urlowner', 'url-password-1')`).data.token;
-const urlSave = (extra, pw) => run(`saveSettings('${urlTok}', ${JSON.stringify(extra)}${pw === undefined ? '' : ", '" + pw + "'"})`);
-const sameUrl = run('readSettings_()').workerUrl;
-const r1 = urlSave({ shopName: 'ชื่อใหม่', workerUrl: sameUrl });                     // unchanged URL → no password
-const r2 = urlSave({ workerUrl: 'https://evil.example.com' });                          // changed, no password
-const r3 = urlSave({ workerUrl: 'https://evil.example.com' }, 'wrong-password');        // changed, wrong password
-const stillOld = run('readSettings_()').workerUrl === sameUrl;
-const r4 = urlSave({ workerUrl: 'https://new.example.workers.dev/' }, 'url-password-1'); // changed, right password (trailing slash normalised)
-const r5 = urlSave({ shopName: 'ไม่แตะ URL' });                                         // other fields only
-const afterNew = run('readSettings_()').workerUrl;
-const confirmAudit = JSON.stringify(spreadsheet.getSheetByName('AuditLog').data);
-// 5 wrong confirmations share the login counter → locked, even with the right password
-for (let i = 0; i < 5; i++) urlSave({ workerUrl: 'https://evil2.example.com' }, 'wrong-' + i); // a success above reset the counter
-const r6 = urlSave({ workerUrl: 'https://evil2.example.com' }, 'url-password-1');
-const urlOk = r1.ok && r2.code === 'confirm_required' && r3.code === 'bad_password' && stillOld && r4.ok &&
-  afterNew === 'https://new.example.workers.dev' && r5.ok && confirmAudit.indexOf('confirmFailed') >= 0 &&
-  confirmAudit.indexOf('url-password-1') < 0 && r6.code === 'locked';
-console.log((urlOk ? 'PASS' : 'FAIL') + ' Worker URL change needs password', JSON.stringify({ r1: r1.ok, r2: r2.code, r3: r3.code, stillOld, r4: r4.ok, afterNew, r5: r5.ok, r6: r6.code }));
-if (!urlOk) process.exitCode = 1;
-
-// Settings: Sheet URL is shown to the admin UI only; LINE OA IDs that are not Official Accounts get a hint.
-run(`withLock_(() => { const u = readUsers_(); u.push(newUser_('setowner', 'Set owner', 'admin', 'set-password-1')); writeUsers_(u); })`);
-const adminTok = run(`login('setowner', 'set-password-1')`).data.token;
-run(`props_().setProperty('ROOT_FOLDER_ID', 'MOCKROOTFOLDER01')`);
-const got = run(`getSettings('${adminTok}')`).data;
-const publicOnly = JSON.stringify(run('publicSettings_(readSettings_())'));
-const lineBefore = require('./gas-mocks.cjs').lineChecks.length;
-const lineReal = run(`saveSettings('${adminTok}', { lineOaId: '@linedevelopers' })`);
-const lineFake = run(`saveSettings('${adminTok}', { lineOaId: 'jiratheepz' })`);
-const lineSame = run(`saveSettings('${adminTok}', { lineOaId: '@jiratheepz', shopName: 'ชื่ออื่น' })`);
-const checks = require('./gas-mocks.cjs').lineChecks.length - lineBefore;
-const settingsOk = got.sheetUrl === 'https://docs.google.com/spreadsheets/d/MOCK-SHEET-ID/edit' && publicOnly.indexOf('sheetUrl') < 0 &&
-  got.driveUrl === 'https://drive.google.com/drive/folders/MOCKROOTFOLDER01' && publicOnly.indexOf('driveUrl') < 0 &&
-  lineReal.ok && lineReal.data.warnings.length === 0 && lineFake.ok && lineFake.data.warnings.length === 1 &&
-  lineFake.data.settings.lineOaId === '@jiratheepz' && lineFake.data.warnings[0].indexOf('user not found') > 0 &&
-  lineSame.ok && lineSame.data.warnings.length === 0 && checks === 2 && lineFake.data.settings.sheetUrl === got.sheetUrl;
-console.log((settingsOk ? 'PASS' : 'FAIL') + ' sheet URL (admin only) + LINE OA hint', JSON.stringify({ sheetUrl: !!got.sheetUrl, publicHasSheet: publicOnly.indexOf('sheetUrl') >= 0, real: lineReal.data && lineReal.data.warnings.length, fake: lineFake.data && lineFake.data.warnings.length, same: lineSame.data && lineSame.data.warnings.length, checks }));
-if (!settingsOk) process.exitCode = 1;

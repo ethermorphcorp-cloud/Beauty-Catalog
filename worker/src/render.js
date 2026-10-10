@@ -116,7 +116,6 @@ function layout({ shop, title, description, canonical, image, type, noindex, bod
     '<title>' + esc(title) + '</title>' +
     (description ? '<meta name="description" content="' + esc(description) + '">' : '') +
     (noindex ? '<meta name="robots" content="noindex">' : '') +
-    (shop.fbAppId ? '<meta property="fb:app_id" content="' + esc(shop.fbAppId) + '">' : '') +
     '<meta property="og:site_name" content="' + esc(shop.shopName || '') + '">' +
     '<meta property="og:title" content="' + esc(title) + '">' +
     (description ? '<meta property="og:description" content="' + esc(description) + '">' : '') +

@@ -17,9 +17,7 @@
       "name": "npbeauty",
       "vars": {
         // GAS web app /exec URL of the NPBeauty sheet
-        "GAS_URL": "https://script.google.com/macros/s/AKfycbyfMCb5m-TTBWT2NykhvyjvhGOktfumfKx6M_2sDLb25ATRDR4AHX-9EvyFZgsFJPl1-A/exec",
-        // Facebook App ID (public) → fb:app_id meta tag for Messenger/Facebook previews
-        "FB_APP_ID": "2038220270895186"
+        "GAS_URL": "https://script.google.com/macros/s/AKfycbyfMCb5m-TTBWT2NykhvyjvhGOktfumfKx6M_2sDLb25ATRDR4AHX-9EvyFZgsFJPl1-A/exec"
       },
       "kv_namespaces": [{ "binding": "CATALOG", "id": "ce19a06132a144a0bf511462507ff0aa" }]
     },
@@ -28,9 +26,7 @@
       "name": "lemonbeauty",
       "vars": {
         // GAS web app /exec URL of the LemonBeauty sheet
-        "GAS_URL": "https://script.google.com/macros/s/AKfycbzGSVAOM_Kd6ueNRJE3yVdnK6ZHqLo7tgOA05WXxm6W3oQ253bn4kDtiJSAVOeQ1E8e/exec",
-        // Facebook App ID (public) → fb:app_id meta tag for Messenger/Facebook previews
-        "FB_APP_ID": "2038220270895186"
+        "GAS_URL": "https://script.google.com/macros/s/AKfycbzGSVAOM_Kd6ueNRJE3yVdnK6ZHqLo7tgOA05WXxm6W3oQ253bn4kDtiJSAVOeQ1E8e/exec"
       },
       "kv_namespaces": [{ "binding": "CATALOG", "id": "c1536310997045299f83920ce21f0162" }]
     }

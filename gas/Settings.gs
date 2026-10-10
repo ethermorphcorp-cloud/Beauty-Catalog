@@ -1,9 +1,7 @@
 // Settings.gs — shop settings (Settings tab) and categories (Categories tab).
 
-// rootFolderUrl is sheet-only: setup() reads it to switch the root folder and writes it back; it is not
-// editable in the admin app and never sent to the Worker (see publicSettings_).
-const SETTING_KEYS = ['shopName', 'logoFileId', 'lineOaId', 'primaryColor', 'workerUrl', 'rootFolderUrl'];
-const SETTING_DEFAULTS = { shopName: '', logoFileId: '', lineOaId: '', primaryColor: '#2563EB', workerUrl: '', rootFolderUrl: '' };
+const SETTING_KEYS = ['shopName', 'logoFileId', 'lineOaId', 'primaryColor', 'workerUrl'];
+const SETTING_DEFAULTS = { shopName: '', logoFileId: '', lineOaId: '', primaryColor: '#2563EB', workerUrl: '' };
 const SETTING_LABELS = { shopName: 'ชื่อร้าน', lineOaId: 'LINE OA ID', primaryColor: 'สีหลัก', workerUrl: 'Worker URL' };
 
 // ---------- settings ----------
@@ -99,64 +97,24 @@ function cleanSettingsInput_(input) {
   return out;
 }
 
-/** Settings for the admin UI: stored values plus the Sheet and Drive root folder URLs (display only, never stored or sent to the Worker). */
-function adminSettings_() {
-  const rootId = props_().getProperty('ROOT_FOLDER_ID');
-  return Object.assign(readSettings_(), {
-    sheetUrl: SpreadsheetApp.getActiveSpreadsheet().getUrl(),
-    driveUrl: rootId ? 'https://drive.google.com/drive/folders/' + rootId : '',
-  });
-}
-
-/**
- * oaMessage links only work for LINE Official Account IDs. A real OA has a public page at page.line.me/<id>
- * (HTTP 200); personal IDs and unknown IDs are redirected to the add-friend page instead (HTTP 3xx/404).
- * Returns a Thai hint when the ID does not look like an OA, '' when it does or the check could not run.
- */
-function checkLineOa_(lineOaId) {
-  const id = String(lineOaId || '').replace(/^@/, '');
-  if (!id) return '';
-  try {
-    const res = UrlFetchApp.fetch('https://page.line.me/' + encodeURIComponent(id), { muteHttpExceptions: true, followRedirects: false });
-    if (res.getResponseCode() === 200) return '';
-    return 'ไม่พบหน้า LINE Official Account ของ ' + lineOaId + ' — ปุ่ม "ทัก LINE" อาจขึ้น "user not found" ตรวจว่าเป็น Basic ID / Premium ID ของ LINE Official Account (ไม่ใช่ LINE ID ส่วนตัว)';
-  } catch (err) {
-    console.warn('LINE OA check skipped', err);
-    return '';
-  }
-}
-
 function getSettings(token) {
   return respond_(() => {
     requireUser_(token);
-    return adminSettings_();
+    return readSettings_();
   });
 }
 
-/**
- * Saves shop settings. Changing workerUrl needs confirmPassword (the user's own password): sync sends
- * API_SECRET to that address, so a hijacked session must not be able to repoint it silently.
- */
-function saveSettings(token, input, confirmPassword) {
+function saveSettings(token, input) {
   return respond_(() => {
     const user = requireUser_(token);
     const values = cleanSettingsInput_(input);
-    const previous = readSettings_();
-    if ('workerUrl' in values && values.workerUrl !== previous.workerUrl) {
-      confirmPassword_(user, confirmPassword, 'workerUrl');
-    }
     const entries = withLock_(() => {
       const changed = writeSettings_(values);
       auditMany_(user.username, 'saveSettings', changed);
       return changed;
     });
     const sync = entries.length ? syncSettings_() : { synced: false, skipped: true };
-    const warnings = [];
-    if ('lineOaId' in values && values.lineOaId && values.lineOaId !== previous.lineOaId) {
-      const hint = checkLineOa_(values.lineOaId);
-      if (hint) warnings.push(hint);
-    }
-    return { settings: adminSettings_(), sync, warnings };
+    return { settings: readSettings_(), sync };
   });
 }
 

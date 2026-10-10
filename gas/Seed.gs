@@ -60,7 +60,19 @@ function removeDemo_(actor) {
   return withLock_(() => {
     const table = readProducts_();
     const demo = table.records.filter((r) => r.code.toUpperCase().indexOf(DEMO_PREFIX) === 0);
-    demo.forEach((r) => trashOwnFolder_(r)); // only folders the system created for the product
+    const rootId = props_().getProperty('ROOT_FOLDER_ID');
+    demo.forEach((r) => {
+      // Only trash folders the system created for this product (named after productId, inside the root folder).
+      try {
+        const folder = DriveApp.getFolderById(r.folderId);
+        const parents = folder.getParents();
+        let inRoot = false;
+        while (parents.hasNext()) if (parents.next().getId() === rootId) inRoot = true;
+        if (inRoot && folder.getName() === r.productId) folder.setTrashed(true);
+      } catch (err) {
+        console.warn('demo folder not removed', r.productId, err);
+      }
+    });
     demo
       .map((r) => r._row)
       .sort((a, b) => b - a)

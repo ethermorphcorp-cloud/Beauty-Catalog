@@ -25,7 +25,7 @@ function apiProduct_(code) {
   const table = readProducts_();
   const rec = findByCode_(table, c);
   if (rec) {
-    return { ok: true, product: workerProduct_(rec), images: rec.status === 'active' ? workerImages_(listFolderImages_(rec.folderId), rec) : [] };
+    return { ok: true, product: workerProduct_(rec), images: rec.status === 'active' ? listFolderImages_(rec.folderId) : [] };
   }
   const moved = findByOldCode_(table, c);
   if (moved) return { ok: true, redirect: moved.code };
