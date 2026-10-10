@@ -24,7 +24,6 @@ function postToWorker_(body) {
   }
 }
 
-/** The product as the Worker sees it. Hidden products carry no details. */
 /** Images as the Worker needs them (id + name only) with the product's cover first: it becomes the LINE preview image. */
 function workerImages_(images, rec) {
   const list = images || [];
@@ -38,6 +37,7 @@ function syncDeletedProduct_(rec) {
   return postToWorker_({ type: 'delete', data: { code: rec.code }, oldCodes: splitCodes_(rec.oldCodes) });
 }
 
+/** The product as the Worker sees it. Hidden products carry no details. */
 function workerProduct_(rec) {
   if (rec.status !== 'active') return { productId: rec.productId, code: rec.code, status: 'hidden', updatedAt: rec.updatedAt };
   return {
