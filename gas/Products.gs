@@ -75,6 +75,7 @@ function publicProduct_(rec) {
     status: rec.status || 'active',
     oldCodes: splitCodes_(rec.oldCodes),
     coverFileId: rec.coverFileId,
+    coverPinned: rec.coverPinned === '1',
     createdAt: rec.createdAt,
     updatedAt: rec.updatedAt,
     updatedBy: rec.updatedBy,
@@ -121,11 +122,49 @@ function getProduct(token, productId) {
   return respond_(() => {
     requireUser_(token);
     const rec = findById_(readProducts_(), productId);
-    return { product: publicProduct_(rec), images: listFolderImages_(rec.folderId) };
+    const images = listFolderImages_(rec.folderId);
+    // Keep the stored cover in step with the folder (older rows, or images added outside the app).
+    if (rec.folderId && rec.coverFileId !== pickCover_(rec, images).id) {
+      withLock_(() => {
+        const fresh = readProducts_();
+        const cur = findById_(fresh, productId);
+        refreshCover_(fresh, cur, images);
+        Object.assign(rec, cur);
+      });
+    }
+    return { product: publicProduct_(rec), images };
   });
 }
 
 // ---------- write ----------
+
+/**
+ * Deletes a product for good: the Sheet row goes (its details stay in the AuditLog), the Drive folder moves to the
+ * trash when the system created it (linked folders are left alone), and the Worker forgets the link.
+ * productId is never reused (LAST_PRODUCT_SEQ). Hiding (setStatus) is the way to stop selling without deleting.
+ */
+function deleteProduct(token, productId) {
+  return respond_(() => {
+    const user = requireUser_(token);
+    const result = withLock_(() => {
+      const table = readProducts_();
+      const rec = findById_(table, productId);
+      table.sheet.deleteRow(rec._row);
+      const folderTrashed = trashOwnFolder_(rec);
+      audit_(user.username, 'deleteProduct', {
+        productId: rec.productId,
+        code: rec.code,
+        field: 'product',
+        before: [rec.code, rec.name, rec.category, rec.folderUrl].filter(Boolean).join(' | '),
+        after: !rec.folderId ? 'ไม่มีโฟลเดอร์รูป' : folderTrashed ? 'โฟลเดอร์รูปย้ายไปถังขยะ' : 'โฟลเดอร์รูปไม่ถูกลบ (เชื่อมไว้จากภายนอก)',
+      });
+      return { rec, folderTrashed };
+    });
+    const sync = syncDeletedProduct_(result.rec);
+    const warnings = result.rec.folderId && !result.folderTrashed ? ['โฟลเดอร์รูปเป็นโฟลเดอร์ที่เชื่อมไว้ จึงไม่ถูกลบ (ยังอยู่ใน Google Drive)'] : [];
+    return { productId: result.rec.productId, folderTrashed: result.folderTrashed, warnings, sync };
+  });
+}
 
 function createProduct(token, input) {
   return respond_(() => {

@@ -8,7 +8,7 @@ const SHEET = {
   users: 'Users',
 };
 
-const PRODUCT_HEADERS = ['productId', 'code', 'name', 'category', 'description', 'folderId', 'folderUrl', 'status', 'oldCodes', 'coverFileId', 'createdAt', 'updatedAt', 'updatedBy'];
+const PRODUCT_HEADERS = ['productId', 'code', 'name', 'category', 'description', 'folderId', 'folderUrl', 'status', 'oldCodes', 'coverFileId', 'coverPinned', 'createdAt', 'updatedAt', 'updatedBy'];
 const CATEGORY_HEADERS = ['name'];
 const SETTINGS_HEADERS = ['key', 'value'];
 const AUDIT_HEADERS = ['timestamp', 'user', 'action', 'productId', 'code', 'field', 'before', 'after'];
@@ -36,6 +36,7 @@ function doGet(e) {
 function bootData_() {
   try {
     ensureUsersTab_();
+    ensureProductColumns_();
     const s = readSettings_();
     return { settings: { shopName: s.shopName, logoFileId: s.logoFileId, primaryColor: s.primaryColor }, version: buildVersion_() };
   } catch (err) {

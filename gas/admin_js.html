@@ -9,6 +9,7 @@
   const NO_CATEGORY = '__none__';
   const NEW_CATEGORY = '__new__';
   const CSV_CHUNK = 50;
+  const PAGE_SIZE = 20;
 
   const state = {
     token: null,
@@ -21,6 +22,7 @@
     settingsTab: 'shop',
     q: '',
     categoryFilter: '',
+    page: 1,
     pendingStatus: {},
     addFiles: [],
     csv: null,
@@ -50,7 +52,9 @@
     addBox: '<rect x="3" y="3" width="18" height="18" rx="4"></rect><path d="M12 8v8M8 12h8"></path>',
     grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect>',
     chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>',
-    gear: '<circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1"></path>',
+    gear: '<path d="M10.16 4.63L10.44 2.12L13.56 2.12L13.84 4.63L15.91 5.49L17.88 3.91L20.09 6.12L18.51 8.09L19.37 10.16L21.88 10.44L21.88 13.56L19.37 13.84L18.51 15.91L20.09 17.88L17.88 20.09L15.91 18.51L13.84 19.37L13.56 21.88L10.44 21.88L10.16 19.37L8.09 18.51L6.12 20.09L3.91 17.88L5.49 15.91L4.63 13.84L2.12 13.56L2.12 10.44L4.63 10.16L5.49 8.09L3.91 6.12L6.12 3.91L8.09 5.49Z"></path><circle cx="12" cy="12" r="3.2"></circle>',
+    external: '<path d="M14 4h6v6M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path>',
+    upload: '<path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path>',
     image: '<rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-9 9"></path>',
     x: '<path d="M6 6l12 12M18 6L6 18"></path>',
     back: '<path d="M15 5l-7 7 7 7"></path>',
@@ -58,6 +62,8 @@
     logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l-5-5 5-5M5 12h11"></path>',
     download: '<path d="M12 4v11M7 10l5 5 5-5"></path><path d="M5 20h14"></path>',
     check: '<path d="M5 12l5 5 9-10"></path>',
+    share: '<circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"></path>',
+    star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9L12 16.9l-5.2 2.9 1-5.9-4.3-4.2 5.9-.8z"></path>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path>',
     alert: '<path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18h.01"></path>',
     folder: '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
@@ -304,8 +310,9 @@
   }
 
   // ---------- chrome & routing ----------
-  const DESK_TABS = [['list', 'รายการสินค้า'], ['summary', 'สรุป'], ['add', 'เพิ่มสินค้า'], ['csv', 'นำเข้า CSV'], ['settings', 'ตั้งค่า']];
-  const MOBILE_TABS = [['add', 'addBox', 'เพิ่มสินค้า'], ['list', 'grid', 'รายการสินค้า'], ['summary', 'chart', 'สรุป'], ['settings', 'gear', 'ตั้งค่า']];
+  // "เพิ่มสินค้า" is not a menu item: it is a button on the product list that opens the add form (side panel / full page).
+  const DESK_TABS = [['list', 'รายการสินค้า'], ['summary', 'สรุป'], ['csv', 'นำเข้า CSV'], ['settings', 'ตั้งค่า']];
+  const MOBILE_TABS = [['list', 'grid', 'รายการสินค้า'], ['summary', 'chart', 'สรุป'], ['csv', 'upload', 'นำเข้า'], ['settings', 'gear', 'ตั้งค่า']];
 
   function renderChrome() {
     $('#brand-logo').innerHTML = logoHtml();
@@ -325,7 +332,6 @@
   }
 
   function setView(view) {
-    if (view === 'csv' && !DESKTOP.matches) view = 'list';
     if (state.view === 'settings' && view !== 'settings') applyTheme(state.settings.primaryColor); // drop unsaved colour preview
     state.view = view;
     render();
@@ -337,7 +343,6 @@
     updateNav();
     const v = $('#view');
     if (state.view === 'summary') v.innerHTML = summaryHtml();
-    else if (state.view === 'add') v.innerHTML = addHtml();
     else if (state.view === 'csv') v.innerHTML = csvHtml();
     else if (state.view === 'settings') {
       v.innerHTML = settingsHtml();
@@ -358,10 +363,34 @@
   // ---------- product list ----------
   function listHtml() {
     return '<div class="page">' +
+      '<div class="page-head"><h1 class="page-title">รายการสินค้า</h1>' +
+      '<button type="button" class="btn btn-primary" data-action="add-product">' + icon('plus', 18) + 'เพิ่มสินค้า</button></div>' +
       '<div class="list-toolbar"><div class="search"><label class="sr-only" for="q">ค้นหาสินค้า</label>' + icon('search', 20) +
       '<input id="q" class="input" type="search" placeholder="ค้นหารหัสหรือชื่อสินค้า" value="' + esc(state.q) + '" autocomplete="off"></div>' +
+      '<div class="cat-filter"><label class="sr-only" for="cat-filter">กรองตามหมวดหมู่</label>' +
+      '<select id="cat-filter" class="select">' + categoryFilterOptions() + '</select></div>' +
       '<div id="list-meta" class="list-meta"></div></div>' +
-      '<div id="product-list" class="product-list"></div></div>';
+      '<div id="product-list" class="product-list"></div>' +
+      '<nav id="list-pager" class="pager" aria-label="เปลี่ยนหน้ารายการสินค้า" hidden></nav></div>';
+  }
+
+  /** Options for the category filter: every category with its product count, plus "no category" when used. */
+  function categoryFilterOptions() {
+    const counts = new Map();
+    state.categories.forEach((c) => counts.set(c.name, 0));
+    let none = 0;
+    state.products.forEach((p) => {
+      if (!p.category) none++;
+      else counts.set(p.category, (counts.get(p.category) || 0) + 1);
+    });
+    if (state.categoryFilter && state.categoryFilter !== NO_CATEGORY && !counts.has(state.categoryFilter)) state.categoryFilter = ''; // renamed or removed
+    if (state.categoryFilter === NO_CATEGORY && !none) state.categoryFilter = '';
+    let html = '<option value="">ทุกหมวดหมู่ (' + state.products.length + ')</option>';
+    counts.forEach((n, name) => {
+      html += '<option value="' + esc(name) + '"' + (state.categoryFilter === name ? ' selected' : '') + '>' + esc(name) + ' (' + n + ')</option>';
+    });
+    if (none) html += '<option value="' + NO_CATEGORY + '"' + (state.categoryFilter === NO_CATEGORY ? ' selected' : '') + '>ไม่มีหมวด (' + none + ')</option>';
+    return html;
   }
 
   function filteredProducts() {
@@ -377,17 +406,52 @@
     const meta = $('#list-meta');
     const list = $('#product-list');
     if (!meta || !list) return;
+    const select = $('#cat-filter');
+    if (select) {
+      select.innerHTML = categoryFilterOptions(); // keeps focus; counts follow edits
+      select.value = state.categoryFilter;
+    }
     const items = filteredProducts();
+    const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    if (state.page > pages) state.page = pages;
+    if (state.page < 1) state.page = 1;
     const filtered = state.q.trim() || state.categoryFilter;
-    meta.innerHTML = '<span>' + (filtered ? 'พบ ' : 'ทั้งหมด ') + items.length + ' รายการ</span>' +
-      (state.categoryFilter
-        ? '<button type="button" class="chip-filter" data-action="clear-category">หมวด: ' + esc(state.categoryFilter === NO_CATEGORY ? 'ไม่มีหมวด' : state.categoryFilter) + ' ' + icon('x', 14) + '<span class="sr-only">ล้างตัวกรอง</span></button>'
-        : '');
+    meta.innerHTML = '<span>' + (filtered ? 'พบ ' : 'ทั้งหมด ') + items.length + ' รายการ</span>';
     if (!state.products.length) {
-      list.innerHTML = '<div class="empty">' + icon('image', 32) + '<p>ยังไม่มีสินค้า</p><button type="button" class="btn btn-primary" data-nav="add">' + icon('plus', 18) + 'เพิ่มสินค้าแรก</button></div>';
+      list.innerHTML = '<div class="empty">' + icon('image', 32) + '<p>ยังไม่มีสินค้า</p><button type="button" class="btn btn-primary" data-action="add-product">' + icon('plus', 18) + 'เพิ่มสินค้าแรก</button></div>';
+      renderPager(0, 1, 1);
       return;
     }
-    list.innerHTML = items.length ? items.map(productCard).join('') : '<div class="empty"><p>ไม่พบสินค้าที่ตรงกับการค้นหา</p></div>';
+    const start = (state.page - 1) * PAGE_SIZE;
+    list.innerHTML = items.length ? items.slice(start, start + PAGE_SIZE).map(productCard).join('') : '<div class="empty"><p>ไม่พบสินค้าที่ตรงกับการค้นหา</p></div>';
+    renderPager(items.length, state.page, pages);
+  }
+
+  /** Previous / numbered pages / next. On phones only the current number shows between the arrows. */
+  function renderPager(total, page, pages) {
+    const nav = $('#list-pager');
+    if (!nav) return;
+    if (pages <= 1) {
+      nav.hidden = true;
+      nav.innerHTML = '';
+      return;
+    }
+    const from = (page - 1) * PAGE_SIZE + 1;
+    const to = Math.min(page * PAGE_SIZE, total);
+    const nums = [];
+    for (let n = 1; n <= pages; n++) if (n === 1 || n === pages || Math.abs(n - page) <= 1) nums.push(n);
+    let buttons = '';
+    nums.forEach((n, i) => {
+      if (i > 0 && n - nums[i - 1] > 1) buttons += '<span class="pg-gap" aria-hidden="true">…</span>';
+      buttons += '<button type="button" class="pg-btn pg-num"' + (n === page ? ' aria-current="page"' : '') + ' data-action="page" data-page="' + n + '" aria-label="หน้า ' + n + '">' + n + '</button>';
+    });
+    nav.hidden = false;
+    nav.innerHTML =
+      '<div class="pager-nav">' +
+      '<button type="button" class="pg-btn" data-action="page" data-page="' + (page - 1) + '" aria-label="หน้าก่อนหน้า"' + (page <= 1 ? ' disabled' : '') + '>' + icon('back', 18) + '</button>' +
+      buttons +
+      '<button type="button" class="pg-btn pg-next" data-action="page" data-page="' + (page + 1) + '" aria-label="หน้าถัดไป"' + (page >= pages ? ' disabled' : '') + '>' + icon('back', 18) + '</button>' +
+      '</div><span class="pager-info">แสดง ' + from + '–' + to + ' จาก ' + total + ' รายการ · หน้า ' + page + '/' + pages + '</span>';
   }
 
   function switchHtml(p) {
@@ -404,6 +468,7 @@
       '<div class="pc-switch">' + switchHtml(p) + '</div>' +
       '<div class="pc-actions">' +
       '<button type="button" class="btn btn-outline" data-action="copy" data-id="' + esc(p.productId) + '" aria-label="คัดลอกลิงก์ ' + esc(p.code) + '">' + icon('copy', 18) + '<span class="btn-label">คัดลอกลิงก์</span></button>' +
+      '<button type="button" class="btn btn-outline" data-action="share" data-id="' + esc(p.productId) + '" aria-label="แชร์รูปและลิงก์ ' + esc(p.code) + '">' + icon('share', 18) + '<span class="btn-label">แชร์</span></button>' +
       '<button type="button" class="btn btn-outline" data-action="edit" data-id="' + esc(p.productId) + '" aria-label="แก้ไข ' + esc(p.code) + '">' + icon('edit', 18) + '<span class="btn-label">แก้ไข</span></button>' +
       '</div></article>';
   }
@@ -456,13 +521,133 @@
     return ok;
   }
 
+  /** "{name}\n{WORKER_URL}/p/{code}" — the text customers receive; '' when the Worker URL is not set. */
+  function linkText(p) {
+    const base = String(state.settings.workerUrl || '').replace(/\/+$/, '');
+    return base ? p.name + '\n' + base + '/p/' + encodeURIComponent(p.code) : '';
+  }
+
   async function copyLink(id) {
     const p = findProduct(id);
     if (!p) return;
-    const base = String(state.settings.workerUrl || '').replace(/\/+$/, '');
-    if (!base) return toast('ยังไม่ได้ตั้ง Worker URL (ตั้งค่า › ร้านค้า)', 'error');
-    const ok = await copyText(p.name + '\n' + base + '/p/' + encodeURIComponent(p.code));
+    const text = linkText(p);
+    if (!text) return toast('ยังไม่ได้ตั้ง Worker URL (ตั้งค่า › ร้านค้า)', 'error');
+    const ok = await copyText(text);
     toast(ok ? 'คัดลอกลิงก์แล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error');
+  }
+
+  // ---------- share the cover as a photo + text (works in Messenger's encrypted chats, which show no link previews) ----------
+  function base64ToFile(base64, name, type) {
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new File([bytes], name, { type });
+  }
+
+  async function shareProduct(id, btn) {
+    const p = findProduct(id);
+    if (!p) return;
+    const text = linkText(p);
+    if (!text) return toast('ยังไม่ได้ตั้ง Worker URL (ตั้งค่า › ร้านค้า)', 'error');
+    let data = null;
+    await busy(btn, async () => {
+      data = await call('getShareImage', p.productId);
+    });
+    if (!data) return;
+    const file = base64ToFile(data.base64, data.name, data.mimeType);
+    let canShareFile = false;
+    try {
+      canShareFile = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+    } catch (err) {
+      canShareFile = false;
+    }
+    openShareSheet(p, file, text, canShareFile);
+  }
+
+  /**
+   * Messenger keeps only the photo when a photo and text are shared together, so sharing is two steps:
+   * 1) the cover photo, 2) the name + link as text (same chat). Each step needs its own tap because browsers only
+   * open the share sheet straight from a user gesture. Without file sharing (most desktops) the photo can be saved
+   * and the text copied instead.
+   */
+  function openShareSheet(p, file, text, canShareFile) {
+    const root = $('#modal-root');
+    const url = URL.createObjectURL(file);
+    const previous = document.activeElement;
+    const canShareText = !!navigator.share;
+    const done = { file: false, text: false };
+    root.innerHTML =
+      '<div class="scrim" data-share-close></div>' +
+      '<div class="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-title">' +
+      '<div class="share-head"><h2 id="share-title">แชร์ ' + esc(p.code) + '</h2>' +
+      '<button type="button" class="icon-btn" data-share-close aria-label="ปิด">' + icon('x', 22) + '</button></div>' +
+      '<img class="share-img" src="' + url + '" alt="รูปปก ' + esc(p.name) + '">' +
+      '<pre class="share-text">' + esc(text) + '</pre>' +
+      (canShareFile
+        ? '<p class="hint">Messenger ส่งรูปกับข้อความแยกกัน: กด <strong>1. แชร์รูป</strong> แล้วเลือกแชท จากนั้นกด <strong>2. แชร์ลิงก์</strong> (ชื่อสินค้า + ลิงก์) แล้วเลือกแชทเดิม</p>'
+        : '<p class="hint">เครื่องนี้แชร์รูปตรงไม่ได้ ให้กด “บันทึกรูป” แล้วแนบในแชท จากนั้นกด “คัดลอกข้อความ” แล้ววางต่อท้าย</p>') +
+      '<div class="share-actions">' +
+      (canShareFile
+        ? '<button type="button" class="btn btn-primary btn-lg" data-share-file>' + icon('share', 18) + '<span>1. แชร์รูป</span></button>' +
+          (canShareText ? '<button type="button" class="btn btn-outline btn-lg" data-share-text>' + icon('link', 18) + '<span>2. แชร์ลิงก์</span></button>' : '')
+        : '<a class="btn btn-outline btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>') +
+      '<button type="button" class="btn btn-outline btn-lg" data-share-copy>' + icon('copy', 18) + 'คัดลอกข้อความ</button>' +
+      (canShareFile ? '<a class="btn btn-outline btn-lg" href="' + url + '" download="' + esc(file.name) + '" data-share-save>' + icon('download', 18) + 'บันทึกรูป</a>' : '') +
+      '</div></div>';
+    const close = () => {
+      root.innerHTML = '';
+      URL.revokeObjectURL(url);
+      document.removeEventListener('keydown', onKey, true);
+      if (previous && previous.focus) previous.focus();
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onKey, true);
+    root.querySelectorAll('[data-share-close]').forEach((el) => el.addEventListener('click', close));
+    root.querySelector('[data-share-copy]').addEventListener('click', async () => {
+      const ok = await copyText(text);
+      toast(ok ? 'คัดลอกข้อความแล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error');
+    });
+    const fileBtn = root.querySelector('[data-share-file]');
+    const textBtn = root.querySelector('[data-share-text]');
+    /** Marks a step done; the other step becomes the primary button, and the sheet closes once both are sent. */
+    const finish = (step) => {
+      done[step] = true;
+      const btn = step === 'file' ? fileBtn : textBtn;
+      const next = step === 'file' ? textBtn : fileBtn;
+      if (btn) {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+        btn.querySelector('span').textContent = (step === 'file' ? '1. แชร์รูป' : '2. แชร์ลิงก์') + ' ✓';
+      }
+      if (done.file && (done.text || !textBtn)) {
+        toast('แชร์รูปและลิงก์แล้ว', 'success');
+        return close();
+      }
+      if (next && !done[step === 'file' ? 'text' : 'file']) {
+        next.classList.remove('btn-outline');
+        next.classList.add('btn-primary');
+        next.focus();
+      }
+      toast(step === 'file' ? 'ส่งรูปแล้ว ต่อไปกด “2. แชร์ลิงก์”' : 'ส่งลิงก์แล้ว ต่อไปกด “1. แชร์รูป”', 'success');
+    };
+    const shareStep = async (step, payload) => {
+      try {
+        await navigator.share(payload);
+        finish(step);
+      } catch (err) {
+        if (err && err.name === 'AbortError') return; // the user closed the share sheet
+        toast('แชร์ไม่สำเร็จ กรุณาใช้ “บันทึกรูป” และ “คัดลอกข้อความ” แทน', 'error');
+      }
+    };
+    if (fileBtn) {
+      fileBtn.addEventListener('click', () => shareStep('file', { files: [file] }));
+      if (textBtn) textBtn.addEventListener('click', () => shareStep('text', { text }));
+      fileBtn.focus();
+    } else {
+      root.querySelector('[data-share-save]').focus();
+    }
   }
 
   // ---------- summary ----------
@@ -587,17 +772,19 @@
     }
     if (progressEl()) progressEl().innerHTML = '';
     const p = findProduct(productId);
-    if (p && last) p.coverFileId = last.coverFileId;
+    if (p && last) {
+      p.coverFileId = last.coverFileId;
+      p.coverPinned = last.coverPinned;
+    }
     if (last) report(last, '');
     const okCount = files.length - failed;
     if (okCount) toast(failed ? 'อัปโหลดสำเร็จ ' + okCount + ' จาก ' + files.length + ' รูป' : 'อัปโหลด ' + okCount + ' รูปแล้ว', failed ? 'warn' : 'success');
     return last;
   }
 
-  // ---------- add product ----------
-  function addHtml() {
-    return '<div class="page narrow"><h1 class="page-title">เพิ่มสินค้า</h1>' +
-      '<form id="add-form" class="card" novalidate>' +
+  // ---------- add product (side panel on desktop, full page with breadcrumbs on mobile) ----------
+  function addFormHtml() {
+    return '<form id="add-form" class="card" novalidate>' +
       '<div class="field"><label for="add-code">รหัสสินค้า</label><input id="add-code" class="input" maxlength="40" autocapitalize="characters" spellcheck="false"><p class="hint">A-Z a-z 0-9 - _ ไม่เกิน 40 ตัว ห้ามซ้ำ (แก้ภายหลังได้)</p></div>' +
       '<div class="field"><label for="add-name">ชื่อสินค้า</label><input id="add-name" class="input" maxlength="200"></div>' +
       '<div class="field"><label for="add-cat">หมวดหมู่</label>' + categorySelectHtml('add-cat', state.categoryFilter && state.categoryFilter !== NO_CATEGORY ? state.categoryFilter : '') + '</div>' +
@@ -608,15 +795,36 @@
       '<ul id="add-file-list" class="file-list">' + addFileListHtml() + '</ul>' +
       '<p class="hint">เรียงตามชื่อไฟล์ · รูปแรกเป็นรูปปก · ระบบย่อรูปให้อัตโนมัติ</p></div>' +
       '<div id="add-progress"></div>' +
-      '<button type="submit" class="btn btn-primary btn-block"><span>' + icon('check', 18) + 'บันทึกสินค้า</span></button>' +
-      '</form></div>';
+      '</form>';
   }
 
   function addFileListHtml() {
     return state.addFiles.map((f) => '<li>' + icon('image', 16) + ' ' + esc(f.name) + '</li>').join('');
   }
 
-  async function submitAdd(form) {
+  function openAdd() {
+    state.addFiles = [];
+    panel = { mode: 'add', id: null, images: null };
+    renderPanel();
+  }
+
+  function renderAddPanel() {
+    document.body.classList.add('panel-open');
+    $('#panel-root').innerHTML =
+      '<div class="scrim desk-only" data-action="close-panel"></div>' +
+      '<aside class="panel" role="dialog" aria-modal="true" aria-label="เพิ่มสินค้า">' +
+      '<header class="panel-header">' +
+      '<nav class="crumbs mobile-only" aria-label="เส้นทางหน้า"><button type="button" class="crumb-link" data-action="close-panel">รายการสินค้า</button>' +
+      '<span class="crumb-sep" aria-hidden="true">›</span><span class="crumb-current" aria-current="page" id="panel-title-m" tabindex="-1">เพิ่มสินค้า</span></nav>' +
+      '<h2 id="panel-title-d" class="desk-only" tabindex="-1">เพิ่มสินค้า</h2>' +
+      '<button type="button" class="icon-btn desk-only" data-action="close-panel" aria-label="ปิด">' + icon('x', 22) + '</button></header>' +
+      '<div class="panel-body">' + addFormHtml() + '</div>' +
+      '<footer class="panel-footer single"><button type="submit" form="add-form" class="btn btn-primary btn-lg"><span>' + icon('check', 18) + 'บันทึกสินค้า</span></button></footer></aside>';
+    const title = $(DESKTOP.matches ? '#panel-title-d' : '#panel-title-m');
+    if (title) title.focus();
+  }
+
+  async function submitAdd() {
     const input = {
       code: $('#add-code').value.trim(),
       name: $('#add-name').value.trim(),
@@ -624,7 +832,8 @@
       description: $('#add-desc').value,
     };
     if (!validateProduct(input, null, 'add')) return;
-    await busy(form.querySelector('[type=submit]'), async () => {
+    const adding = () => panel && panel.mode === 'add'; // the user may close the panel while files upload
+    await busy(document.querySelector('.panel-footer [type=submit]'), async () => {
       const data = await call('createProduct', input);
       state.products.unshift(data.product);
       report(data, 'เพิ่มสินค้า ' + data.product.code + ' แล้ว');
@@ -634,6 +843,8 @@
       await refreshCategories();
       state.q = '';
       state.categoryFilter = '';
+      state.page = 1; // the new product is first
+      if (adding()) closePanel();
       setView('list');
     });
   }
@@ -664,6 +875,7 @@
   }
 
   function renderPanel() {
+    if (panel && panel.mode === 'add') return renderAddPanel();
     const p = panel && findProduct(panel.id);
     if (!p) return closePanel();
     document.body.classList.add('panel-open');
@@ -685,9 +897,12 @@
       '</form>' +
       '<section class="card"><div class="row-between"><div><strong>แสดงบนหน้าร้าน</strong><p class="hint">ถ้าปิด ลิงก์สินค้าจะขึ้นว่า “สินค้านี้ไม่พร้อมจำหน่าย”</p></div><div id="panel-status"></div></div></section>' +
       '<section class="card" id="panel-images"></section>' +
+      '<section class="card"><div class="row-between"><div><strong>ลบสินค้านี้</strong><p class="hint">ลบถาวร ลิงก์ที่ส่งให้ลูกค้าจะเปิดไม่ได้ ถ้าแค่หยุดขาย ให้ปิด “แสดงบนหน้าร้าน” แทน</p></div>' +
+      '<button type="button" class="btn btn-outline btn-lg btn-outline-danger" data-action="delete-product">' + icon('x', 18) + '<span>ลบสินค้า</span></button></div></section>' +
       '</div>' +
-      '<footer class="panel-footer">' +
+      '<footer class="panel-footer has-share">' +
       '<button type="button" class="btn btn-outline btn-lg" data-action="copy" data-id="' + esc(p.productId) + '">' + icon('copy', 18) + 'คัดลอกลิงก์</button>' +
+      '<button type="button" class="btn btn-outline btn-lg" data-action="share" data-id="' + esc(p.productId) + '" aria-label="แชร์รูปและลิงก์">' + icon('share', 18) + 'แชร์</button>' +
       '<button type="submit" form="edit-form" class="btn btn-primary btn-lg"><span>' + icon('check', 18) + 'บันทึก</span></button>' +
       '</footer></aside>';
     renderPanelStatus();
@@ -711,11 +926,15 @@
     el.innerHTML =
       '<div class="section-head"><h3>รูปภาพ' + (images ? ' (' + images.length + ')' : '') + '</h3>' +
       (p.folderUrl ? '<a class="link" href="' + esc(p.folderUrl) + '" target="_blank" rel="noopener">' + icon('folder', 16) + 'เปิดโฟลเดอร์ใน Drive</a>' : '') + '</div>' +
-      '<p class="hint">เรียงตามชื่อไฟล์ · รูปแรกเป็นรูปปก</p>' +
+      '<p class="hint">เรียงตามชื่อไฟล์ · ' + (p.coverPinned
+        ? 'รูปปกที่คุณเลือกเอง <button type="button" class="link-btn" data-action="auto-cover">ใช้รูปล่าสุดอัตโนมัติ</button>'
+        : 'รูปปกคือรูปล่าสุดที่เพิ่มเข้ามา · กดดาวที่รูปเพื่อเลือกรูปปกเอง') + '</p>' +
       (images
         ? '<div class="img-grid">' + images.map((img, i) =>
-            '<figure class="img-tile"><img src="' + thumbUrl(img.id, 400) + '" alt="' + esc(img.name) + '" loading="lazy" data-fallback>' +
-            (i === 0 ? '<span class="cover-badge">ปก</span>' : '') +
+            '<figure class="img-tile' + (img.id === p.coverFileId ? ' is-cover' : '') + '"><img src="' + thumbUrl(img.id, 400) + '" alt="' + esc(img.name) + '" loading="lazy" data-fallback>' +
+            (img.id === p.coverFileId
+              ? '<span class="cover-badge">ปก</span>'
+              : '<button type="button" class="img-cover-btn" data-action="set-cover" data-file="' + esc(img.id) + '" aria-label="ตั้ง ' + esc(img.name) + ' เป็นรูปปก"><span>' + icon('star', 14) + '</span></button>') +
             '<button type="button" class="img-remove" data-action="remove-image" data-file="' + esc(img.id) + '" data-name="' + esc(img.name) + '" aria-label="ลบรูป ' + esc(img.name) + '"><span>' + icon('x', 14) + '</span></button></figure>'
           ).join('') +
           '<button type="button" class="img-add" data-action="pick-files" data-input="edit-files">' + icon('plus', 22) + '<span>เพิ่มรูป</span></button></div>'
@@ -752,11 +971,28 @@
       const data = await call('updateProduct', p.productId, fields);
       Object.assign(p, data.product);
       report(data, 'บันทึก ' + p.code + ' แล้ว');
-      $('#panel-code').textContent = p.code;
-      if (fields.category !== undefined) {
-        await refreshCategories();
-        $('#edit-cat-wrap').outerHTML = categorySelectHtml('edit-cat', p.category);
-      }
+      if (fields.category !== undefined) await refreshCategories();
+      closePanel(); // saved: back to the list right away
+      refreshProductViews();
+    });
+  }
+
+  async function deleteProduct(btn) {
+    const p = panel && findProduct(panel.id);
+    if (!p) return;
+    const ok = await confirmDialog(
+      'ลบสินค้านี้?',
+      p.code + ' · ' + p.name + '\nลิงก์ที่ส่งให้ลูกค้าแล้วจะเปิดไม่ได้อีก และโฟลเดอร์รูปที่ระบบสร้างจะถูกย้ายไปถังขยะของ Google Drive\nถ้าแค่หยุดขายชั่วคราว ให้ปิด “แสดงบนหน้าร้าน” แทน',
+      'ลบสินค้า',
+      true
+    );
+    if (!ok) return;
+    await busy(btn, async () => {
+      const data = await call('deleteProduct', p.productId);
+      state.products = state.products.filter((x) => x.productId !== data.productId);
+      report(data, 'ลบสินค้า ' + p.code + ' แล้ว');
+      closePanel();
+      refreshCategories();
       refreshProductViews();
     });
   }
@@ -770,7 +1006,22 @@
       const data = await call('removeImage', p.productId, btn.getAttribute('data-file'));
       panel.images = data.images;
       p.coverFileId = data.coverFileId;
+      p.coverPinned = data.coverPinned;
       report(data, 'ลบรูปแล้ว');
+      renderPanelImages();
+      refreshProductViews();
+    });
+  }
+
+  /** Pins an image as the product cover; an empty fileId goes back to the automatic cover (latest image). */
+  async function setCover(btn, fileId) {
+    const p = panel && findProduct(panel.id);
+    if (!p) return;
+    await busy(btn, async () => {
+      const data = await call('setCover', p.productId, fileId);
+      p.coverFileId = data.coverFileId;
+      p.coverPinned = data.coverPinned;
+      report(data, fileId ? 'ตั้งรูปปกแล้ว' : 'ใช้รูปล่าสุดเป็นรูปปกแล้ว');
       renderPanelImages();
       refreshProductViews();
     });
@@ -855,16 +1106,16 @@
         '<div class="table-wrap"><table class="table"><thead><tr><th>แถว</th><th>รหัส</th><th>ชื่อสินค้า</th><th>หมวดหมู่</th><th>โฟลเดอร์รูป</th><th>สถานะ</th></tr></thead><tbody>' +
         shown.map((r, i) => {
           const v = c.verdicts[i];
-          return '<tr><td class="muted">' + (i + 2) + '</td><td>' + esc(r.code || '—') + '</td><td class="wrap">' + esc(r.name || '—') + '</td><td>' + esc(r.category) + '</td>' +
-            '<td class="muted">' + (r.folder_url ? 'มีลิงก์' : 'สร้างโฟลเดอร์ใหม่') + '</td>' +
-            '<td><span class="pill s-' + v.status + '">' + LABEL[v.status] + '</span>' + (v.message ? ' <span class="muted">' + esc(v.message) + '</span>' : '') + '</td></tr>';
+          return '<tr><td class="muted" data-label="แถว">' + (i + 2) + '</td><td data-label="รหัส">' + esc(r.code || '—') + '</td><td class="wrap" data-label="ชื่อสินค้า">' + esc(r.name || '—') + '</td><td data-label="หมวดหมู่">' + esc(r.category || '—') + '</td>' +
+            '<td class="muted" data-label="โฟลเดอร์รูป">' + (r.folder_url ? 'มีลิงก์' : 'สร้างโฟลเดอร์ใหม่') + '</td>' +
+            '<td data-label="สถานะ"><span class="pill s-' + v.status + '">' + LABEL[v.status] + '</span>' + (v.message ? ' <span class="muted">' + esc(v.message) + '</span>' : '') + '</td></tr>';
         }).join('') + '</tbody></table>' +
         (c.rows.length > shown.length ? '<p class="hint" style="padding:10px 12px">และอีก ' + (c.rows.length - shown.length) + ' แถว</p>' : '') + '</div>' +
         '<div id="csv-progress"></div>' +
         '<div class="csv-actions"><span class="muted">แถวที่รหัสซ้ำหรือข้อมูลไม่ครบจะถูกข้าม</span>' +
         '<button type="button" class="btn btn-primary btn-lg" data-action="csv-import"' + (counts.new ? '' : ' disabled') + '><span>' + icon('check', 18) + 'ยืนยันนำเข้า ' + counts.new + ' รายการ</span></button></div>';
     }
-    return '<div class="page"><div class="csv-head"><div><h1 class="page-title">นำเข้าสินค้าจาก CSV</h1>' +
+    return '<div class="page"><div class="csv-head"><div><h1 class="page-title">นำเข้ารายการสินค้า (Bulk upload)</h1>' +
       '<span class="muted">ไฟล์ CSV (UTF-8) คอลัมน์ code, name, category, description, folder_url</span></div>' +
       '<button type="button" class="btn btn-outline" data-action="csv-template">' + icon('download', 18) + 'ดาวน์โหลดไฟล์ตัวอย่าง</button>' +
       '<button type="button" class="btn btn-outline" data-action="pick-files" data-input="csv-file">' + icon('file', 18) + (c ? 'เลือกไฟล์ใหม่' : 'เลือกไฟล์ CSV') + '</button>' +
@@ -961,13 +1212,31 @@
       '<p class="hint">PNG/JPG สี่เหลี่ยมจัตุรัส</p></div></div>' +
       '<input id="logo-file" type="file" accept="image/*" class="sr-only" tabindex="-1"></div>' +
       '<div class="field"><label for="set-line">LINE OA ID</label><input id="set-line" class="input" maxlength="41" value="' + esc(s.lineOaId) + '" placeholder="@myshop" autocapitalize="none" spellcheck="false">' +
-      '<p class="hint">ขึ้นต้นด้วย @ ดูได้ใน LINE Official Account Manager</p></div>' +
+      '<p class="hint">ต้องเป็น ID ของ <strong>LINE Official Account</strong> (Basic ID หรือ Premium ID ขึ้นต้นด้วย @) ไม่ใช่ LINE ID ส่วนตัว — ดูได้ใน LINE Official Account Manager</p></div>' +
       '<div class="field"><label for="set-color-hex">สีหลัก</label><div class="color-row">' +
       '<input id="set-color" type="color" value="' + esc(s.primaryColor) + '" aria-label="เลือกสีหลัก">' +
       '<input id="set-color-hex" class="input" maxlength="7" value="' + esc(s.primaryColor) + '" spellcheck="false"></div>' +
       '<div class="preview-box"><span class="hint">ตัวอย่าง</span><span class="chip">หมวดหมู่</span><span class="btn btn-primary btn-block" aria-hidden="true">ทัก LINE</span></div></div>' +
-      '<div class="field"><label for="set-worker">Worker URL (ลิงก์หน้าร้าน)</label><input id="set-worker" class="input" type="url" value="' + esc(s.workerUrl) + '" placeholder="https://xxx.workers.dev" spellcheck="false">' +
-      '<p class="hint">ใช้สร้างลิงก์สินค้าที่ส่งให้ลูกค้า</p></div>' +
+      '<div class="field"><label for="set-worker">Worker URL (ลิงก์หน้าร้าน)</label>' +
+      '<div class="input-row"><input id="set-worker" class="input" type="url" readonly value="' + esc(s.workerUrl) + '" placeholder="https://xxx.workers.dev" spellcheck="false">' +
+      '<button type="button" class="btn btn-outline btn-lg" id="worker-edit-btn" data-action="worker-edit">แก้ไข</button></div>' +
+      '<p class="hint">ใช้สร้างลิงก์สินค้าที่ส่งให้ลูกค้า · กดแก้ไขก่อนจึงจะพิมพ์ได้ และการเปลี่ยนค่านี้ต้องยืนยันด้วยรหัสผ่าน</p>' +
+      '<div id="worker-warn" class="warn-note" role="status" hidden>' + icon('alert', 18) +
+      '<span>คุณกำลังเปลี่ยน Worker URL — ระบบจะส่งข้อมูลสินค้าและรหัสลับของระบบไปที่อยู่ใหม่ และจะขอรหัสผ่านก่อนบันทึก</span></div></div>' +
+      (s.sheetUrl
+        ? '<div class="field"><label for="set-sheet">Google Sheet (ฐานข้อมูลของร้าน)</label>' +
+          '<div class="input-row"><input id="set-sheet" class="input" type="url" readonly value="' + esc(s.sheetUrl) + '">' +
+          '<button type="button" class="btn btn-outline btn-lg" data-action="copy-sheet" aria-label="คัดลอกลิงก์ Google Sheet">' + icon('copy', 18) + '</button>' +
+          '<a class="btn btn-outline btn-lg" href="' + esc(s.sheetUrl) + '" target="_blank" rel="noopener" aria-label="เปิด Google Sheet (แท็บใหม่)">' + icon('external', 18) + '</a></div>' +
+          '<p class="hint">แสดงอย่างเดียว · เปิดได้เฉพาะบัญชี Google ที่ได้รับสิทธิ์ในไฟล์นี้</p></div>'
+        : '') +
+      (s.driveUrl
+        ? '<div class="field"><label for="set-drive">Google Drive (โฟลเดอร์รูปสินค้าของร้าน)</label>' +
+          '<div class="input-row"><input id="set-drive" class="input" type="url" readonly value="' + esc(s.driveUrl) + '">' +
+          '<button type="button" class="btn btn-outline btn-lg" data-action="copy-drive" aria-label="คัดลอกลิงก์โฟลเดอร์ Google Drive">' + icon('copy', 18) + '</button>' +
+          '<a class="btn btn-outline btn-lg" href="' + esc(s.driveUrl) + '" target="_blank" rel="noopener" aria-label="เปิดโฟลเดอร์ Google Drive (แท็บใหม่)">' + icon('external', 18) + '</a></div>' +
+          '<p class="hint">แสดงอย่างเดียว · โฟลเดอร์หลักที่เก็บโฟลเดอร์รูปของสินค้าแต่ละรายการ เปิดได้เฉพาะบัญชี Google ที่ได้รับสิทธิ์</p></div>'
+        : '') +
       '<div class="sticky-actions"><button type="submit" class="btn btn-primary btn-block"><span>' + icon('check', 18) + 'บันทึกการตั้งค่าร้าน</span></button></div>' +
       '</form>';
   }
@@ -982,13 +1251,72 @@
     if (!values.shopName) return invalid('set-name', 'กรุณากรอกชื่อร้าน');
     if (!/^#[0-9a-f]{6}$/i.test(values.primaryColor)) return invalid('set-color-hex', 'สีหลักต้องเป็นรหัสสี เช่น #1F5FAE');
     if (values.workerUrl && !/^https:\/\//i.test(values.workerUrl)) return invalid('set-worker', 'Worker URL ต้องขึ้นต้นด้วย https://');
-    await busy(form.querySelector('[type=submit]'), async () => {
-      const data = await call('saveSettings', values);
+    const btn = form.querySelector('[type=submit]');
+    const save = async (password) => {
+      const data = await call('saveSettings', values, password);
       state.settings = data.settings;
       applyTheme(state.settings.primaryColor);
       renderChrome();
+      setWorkerEditing(false); // the saved URL is now the baseline
       report(data, 'บันทึกการตั้งค่าร้านแล้ว');
-    });
+    };
+    if (normUrl(values.workerUrl) === normUrl(state.settings.workerUrl)) {
+      await busy(btn, () => save());
+      return;
+    }
+
+    // Worker URL changed: warn, then ask for the user's password (checked again on the server).
+    const warning = 'เปลี่ยนจาก\n' + (state.settings.workerUrl || '(ยังไม่ได้ตั้ง)') + '\nเป็น\n' + (values.workerUrl || '(ว่าง)') + '\n\n' +
+      '⚠ ระบบจะส่งข้อมูลสินค้าพร้อมรหัสลับของระบบ (API_SECRET) ไปยังที่อยู่ใหม่นี้ และลิงก์ที่คัดลอกต่อจากนี้จะใช้ที่อยู่ใหม่ ' +
+      'ถ้าใส่ผิดหรือไม่ใช่ Worker ของร้านนี้ ข้อมูลอาจรั่วไหลหรือหน้าร้านจะไม่อัปเดต';
+    let note = '';
+    for (;;) {
+      const answer = await modal({
+        title: 'ยืนยันการเปลี่ยน Worker URL',
+        body: note + warning,
+        confirmText: 'ยืนยันและบันทึก',
+        danger: true,
+        fields: [{ id: 'password', label: 'ใส่รหัสผ่านของคุณเพื่อยืนยัน', type: 'password' }],
+      });
+      if (!answer) return;
+      if (!answer.password) {
+        note = 'กรุณาใส่รหัสผ่าน\n\n';
+        continue;
+      }
+      let retry = false;
+      await busy(btn, async () => {
+        try {
+          await save(answer.password);
+        } catch (err) {
+          if (err.code !== 'bad_password') throw err;
+          retry = true;
+        }
+      });
+      if (!retry) return;
+      note = 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่\n\n';
+    }
+  }
+
+  /** Worker URL is read-only (grey) until "แก้ไข" is pressed; "ยกเลิก" restores the saved value. */
+  function setWorkerEditing(on) {
+    const input = $('#set-worker');
+    const btn = $('#worker-edit-btn');
+    const warn = $('#worker-warn');
+    if (!input || !btn) return;
+    input.readOnly = !on;
+    btn.textContent = on ? 'ยกเลิก' : 'แก้ไข';
+    if (on) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    } else {
+      input.value = state.settings.workerUrl || '';
+      if (warn) warn.hidden = true;
+    }
+  }
+
+  /** Same normalisation as the server: trimmed, no trailing slashes. */
+  function normUrl(u) {
+    return String(u || '').trim().replace(/\/+$/, '');
   }
 
   async function uploadLogo(file) {
@@ -1167,7 +1495,10 @@
     const nav = e.target.closest('[data-nav]');
     if (nav) {
       closePanel();
-      if (nav.getAttribute('data-nav') === 'list' && state.view !== 'list') state.categoryFilter = '';
+      if (nav.getAttribute('data-nav') === 'list' && state.view !== 'list') {
+        state.categoryFilter = '';
+        state.page = 1;
+      }
       return setView(nav.getAttribute('data-nav'));
     }
     const el = e.target.closest('[data-action]');
@@ -1177,14 +1508,25 @@
       case 'logout': return logout();
       case 'toggle-status': return toggleStatus(id);
       case 'copy': return copyLink(id);
+      case 'share': return shareProduct(id, el);
       case 'edit': return openEdit(id);
+      case 'add-product': return openAdd();
       case 'close-panel': return closePanel();
-      case 'clear-category':
-        state.categoryFilter = '';
-        return renderListItems();
+      case 'worker-edit':
+        return setWorkerEditing($('#set-worker').readOnly);
+      case 'copy-sheet':
+        return copyText(state.settings.sheetUrl || '').then((ok) => toast(ok ? 'คัดลอกลิงก์ Google Sheet แล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error'));
+      case 'copy-drive':
+        return copyText(state.settings.driveUrl || '').then((ok) => toast(ok ? 'คัดลอกลิงก์โฟลเดอร์ Google Drive แล้ว' : 'คัดลอกไม่สำเร็จ กรุณาลองใหม่', ok ? 'success' : 'error'));
+      case 'page':
+        state.page = Number(el.getAttribute('data-page')) || 1;
+        renderListItems();
+        window.scrollTo(0, 0);
+        return undefined;
       case 'filter-category':
         state.categoryFilter = el.getAttribute('data-name');
         state.q = '';
+        state.page = 1;
         return setView('list');
       case 'pick-files': {
         const input = document.getElementById(el.getAttribute('data-input'));
@@ -1192,6 +1534,9 @@
         return undefined;
       }
       case 'remove-image': return removeImage(el);
+      case 'delete-product': return deleteProduct(el);
+      case 'set-cover': return setCover(el, el.getAttribute('data-file'));
+      case 'auto-cover': return setCover(el, '');
       case 'link-folder': return linkFolder(el);
       case 'csv-template': return downloadTemplate();
       case 'csv-import': return importCsv(el);
@@ -1222,6 +1567,12 @@
 
   function onChange(e) {
     const t = e.target;
+    if (t.id === 'cat-filter') {
+      state.categoryFilter = t.value;
+      state.page = 1;
+      renderListItems();
+      return;
+    }
     if (t.matches('[data-category-select]')) {
       const extra = document.getElementById(t.id + '-new');
       extra.hidden = t.value !== NEW_CATEGORY;
@@ -1248,7 +1599,11 @@
     const t = e.target;
     if (t.id === 'q') {
       state.q = t.value;
+      state.page = 1;
       renderListItems();
+    } else if (t.id === 'set-worker') {
+      const warn = $('#worker-warn');
+      if (warn) warn.hidden = normUrl(t.value) === normUrl(state.settings.workerUrl);
     } else if (t.id === 'set-color') {
       $('#set-color-hex').value = t.value.toUpperCase();
       applyTheme(t.value);
@@ -1260,10 +1615,6 @@
 
   function onKeydown(e) {
     if (e.key === 'Escape' && panel && !$('#modal-root').children.length) closePanel();
-  }
-
-  function onViewportChange() {
-    if (!DESKTOP.matches && state.view === 'csv') setView('list');
   }
 
   // Broken Drive thumbnails (not shared yet, deleted) fall back to the placeholder icon behind them.
@@ -1278,8 +1629,6 @@
     document.addEventListener('change', onChange);
     document.addEventListener('input', onInput);
     document.addEventListener('keydown', onKeydown);
-    if (DESKTOP.addEventListener) DESKTOP.addEventListener('change', onViewportChange);
-    else DESKTOP.addListener(onViewportChange);
 
     const saved = storage((s) => s.getItem('catalog.token'));
     if (!saved) return renderLogin();
